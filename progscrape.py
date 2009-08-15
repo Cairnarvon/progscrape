@@ -1,10 +1,20 @@
-#!/usr/bin/python2.6 -u
+#!/usr/bin/python -u
 
 # ``Constants''
 
 db_name  = 'prog.db'
 prog_url = 'http://dis.4chan.org/prog/'
 read_url = 'http://dis.4chan.org/read/prog/'
+
+
+# Make sure we're using a compatible version
+
+from sys import version, exit
+
+if version[0] != '2':
+    print "Your version of Python is not supported at this time.",\
+          "Please use Python 2.5 or 2.6."
+    exit(1)
 
 
 # Set up the database connection first

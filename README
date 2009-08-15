@@ -1,9 +1,2 @@
-This is a modification of the /prog/scrape program originally written by Koen Crolla <cairnarvon@gmail.com>.
-It differs in that it supports the newer python 2.6 and it stores the data in Unicode. Unfortunately, this
-makes it incompatible with any existing prog.db you may have. I have included a dump of my prog.db which is
-accurate as of Aug 15 20:13:37 BST 2009. To regain the data in the correct format use the command
-
-	sqlite3 prog.db < sqldump
-
-Alternatively, you could generate a fresh database, although this will take a number of hours and is not recommended.
-Support for newer versions of Python, including Python 3.x is planned for the future.
+This is a scraper written for World4ch's /prog/ textboard, though it should work with any Shiichan textboard.
+It was originally written for Python 2.5 by Koen Crolla <cairnarvon@gmail.com>, and was modified to be compatible with Python 2.6 by Ian Price <ianprice90@googlemail.com>.
