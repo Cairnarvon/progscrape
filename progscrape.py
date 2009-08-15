@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5 -u
+#!/usr/bin/python2.6 -u
 
 # ``Constants''
 
@@ -57,7 +57,7 @@ print "Got it."
 
 # Parse each line, check with DB, keep a list of all threads to be updated
 
-regex = re.compile("""
+regex = re.compile(u"""
     ^([^<]*)    # Subject
     <>
     ([^<]*)     # Name
@@ -75,15 +75,15 @@ regex = re.compile("""
 to_update = []
 
 for line in subjecttxt.readlines():
-    parsed = regex.search(line)
+    parsed = regex.search(unicode(line,"iso-8859-1"))
     try:
         data = parsed.groups()
-        result = db.execute('SELECT last_post FROM threads WHERE thread = ?', (data[3], )).fetchone()
+        result = db.execute('SELECT last_post FROM threads WHERE thread = ?', (unicode(data[3]), )).fetchone()
         if result is None:
-            db.execute('INSERT INTO threads VALUES (?, ?, ?)', (data[3], data[0], 0))
-            to_update.append((data[3], data[6]))
+            db.execute('INSERT INTO threads VALUES (?, ?, ?)', (unicode(data[3]), unicode(data[0]), 0))
+            to_update.append((unicode(data[3]), unicode(data[6])))
         elif int(result[0]) < int(data[6]):
-            to_update.append((data[3], data[6]))
+            to_update.append((unicode(data[3]), unicode(data[6])))
 
     except:
         # Failed to parse line; skip it
@@ -156,16 +156,21 @@ for thread in to_update:
         for i in xrange(len(starts)):
             posts.append(page[starts[i] : ends[i]])
 
-    l = db.execute('SELECT MAX(time) FROM posts WHERE thread = ?', (thread[0],)).fetchone()
+    l = db.execute('SELECT MAX(time) FROM posts WHERE thread = ?', (unicode(thread[0]),)).fetchone()
     l = None if l == None else l[0]
 
     for a in zip(ids, authors, emails, trips, times, posts):
         if a[4] > l:
-            b = [thread[0]]
-            b.extend(a)
-            db.execute('INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)', b)
-    
-    db.execute('UPDATE threads SET last_post = ? WHERE thread = ?', (thread[1], thread[0]))
+            b = [unicode(thread[0])]
+            
+            for y in a:
+                if isinstance(y,str): b.append(unicode(y,"utf-8","replace"))
+                else: b.append(y)
+                               
+            db.execute(u'INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)', b)
+            
+    db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?', (unicode(thread[1]), unicode(thread[0])))
     db_conn.commit()
+
 
 print "All done!"
