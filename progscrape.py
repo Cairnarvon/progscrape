@@ -68,17 +68,17 @@ print "Got it."
 # Parse each line, check with DB, keep a list of all threads to be updated
 
 regex = re.compile(u"""
-    ^([^<]*)    # Subject
+    ^(.*?)      # Subject
     <>
-    ([^<]*)     # Name
+    (.*?)       # Name
     <>
-    ([^<]*)     # E-mail
+    (.*?)       # E-mail
     <>
     (-?\d*)     # Time posted/thread ID
     <>
     (\d*)       # Number of replies
     <>
-    ([^<]*)     # ???
+    (.*?)       # ???
     <>
     (\d*)       # Time of last post
     \\n$""", re.VERBOSE)
