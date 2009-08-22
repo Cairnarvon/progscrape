@@ -112,8 +112,8 @@ for thread in to_update:
     page = urllib.urlopen(read_url + thread[0] + '/1-').read()
     
     ids, authors, emails, trips, times, posts, starts, ends = [], [], [], [], [], [], [], []
-    try:
-        for a in enumerate(page):
+    for a in enumerate(page):
+        try:
             if a[1] == '<':
                 if page[a[0] : a[0] + 22] == '<span class="postnum">':
                     i = 48
@@ -160,11 +160,17 @@ for thread in to_update:
                 elif page[a[0] : a[0] + 13] == '</blockquote>':
                     ends.append(a[0] - 7)
     
-    except:
-        print "! Broken thread: %s" % thread[0]
-    else:
-        for i in xrange(len(starts)):
-            posts.append(page[starts[i] : ends[i]])
+        except:
+            print "! Broken post in thread %s" % thread[0]
+            lens = map(len, [ids, authors, emails, trips, times, posts, starts, ends])
+            minl = min(lens)
+            if max(lens) != minl:
+                for a in [ids, authors, emails, trips, times, posts, starts, ends]:
+                    if len(a) > minl:
+                        a = a[:-1]
+
+    for i in xrange(len(starts)):
+        posts.append(page[starts[i] : ends[i]])
 
     l = db.execute('SELECT MAX(time) FROM posts WHERE thread = ?', (unicode(thread[0]),)).fetchone()
     l = None if l == None else l[0]
