@@ -52,12 +52,23 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import urllib, re
+import urllib2, re, gzip
+from StringIO import StringIO
 
 print "Fetching subject.txt...",
 
+def urlopen(url):
+    req = urllib2.Request(url)
+    req.add_header('Accept-Encoding', 'gzip')
+    req = urllib2.build_opener().open(req)
+
+    if req.headers.get('Content-Encoding') == 'gzip':
+        return gzip.GzipFile(fileobj=StringIO(req.read()))
+    else:
+        return req
+
 try:
-    subjecttxt = urllib.urlopen(prog_url + 'subject.txt')
+    subjecttxt = urlopen(prog_url + 'subject.txt')
 except:
     print "Can't find it! Exiting."
     raise
@@ -108,8 +119,12 @@ import time, datetime as dt
 
 for thread in to_update:
     print "Updating thread %s..." % thread[0]
-    
-    page = urllib.urlopen(read_url + thread[0] + '/1-').read()
+
+    try:
+        page = urlopen(read_url + thread[0] + '/1-').read()
+    except:
+        print "Can't access %s! Exiting." % (read_url + thread[0])
+        raise
     
     ids, authors, emails, trips, times, posts, starts, ends = [], [], [], [], [], [], [], []
     for a in enumerate(page):
