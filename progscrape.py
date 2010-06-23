@@ -96,7 +96,7 @@ regex = re.compile(u"""
 to_update = []
 
 for line in subjecttxt.readlines():
-    parsed = regex.search(unicode(line,"iso-8859-1"))
+    parsed = regex.search(unicode(line,"utf-8"))
     try:
         data = parsed.groups()
         result = db.execute('SELECT last_post FROM threads WHERE thread = ?', (unicode(data[3]), )).fetchone()
@@ -108,99 +108,90 @@ for line in subjecttxt.readlines():
 
     except:
         # Failed to parse line; skip it
-        print "subjects.txt fail:", line
+        print "subject.txt fail:", line
 
 print "%d threads to update." % len(to_update)
 
 
 # Fetch new posts
 
-import time, datetime as dt
+from datetime import datetime
+
+postregex = u"""<h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">[^<]*</span></span></h3>
+<blockquote>
+\t<p>
+(?P<body>.*?)
+\t</p>
+"""
+postregex = re.compile(postregex, re.DOTALL)
+
+meiruregex = u'<a href="mailto:(?P<meiru>.*?)">(?P<rest>[^<]*)</a>'
+meiruregex = re.compile(meiruregex)
 
 for thread in to_update:
     print "Updating thread %s..." % thread[0]
 
+    l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',
+                   (thread[0],)).fetchone()
+    l = 1 if l[0] == None else (int(l[0]) + 1)
+
     try:
-        page = urlopen(read_url + thread[0] + '/1-').read()
+        page = urlopen(read_url + thread[0] + '/%d-' % l).read()
     except:
         print "Can't access %s! Exiting." % (read_url + thread[0])
         raise
     
-    ids, authors, emails, trips, times, posts, starts, ends = [], [], [], [], [], [], [], []
-    for a in enumerate(page):
-        try:
-            if a[1] == '<':
-                if page[a[0] : a[0] + 22] == '<span class="postnum">':
-                    i = 48
-                    while page[a[0] + i] != ',':
-                        i += 1
-                    ids.append(page[a[0] + 48 : a[0] + i])
-                if page[a[0] : a[0] + 25] == '<span class="postername">':
-                    i = 25
-                    while page[a[0] + i : a[0] + i + 7] != '</span>':
-                        i += 1
-                    auth = page[a[0] + 25 : a[0] + i]
-                    if len(auth) > 1 and auth[:2] == '<a':
-                        i = 16
-                        while auth[i] != '"':
-                            i += 1
-                        emails.append(auth[16:i])
-                        auth = auth[i + 2 : -4]
-                    else:
-                        emails.append('')
-                    authors.append(auth)
-                    
-                elif page[a[0] : a[0] + 25] == '<span class="postertrip">':
-                    i = 25
-                    while page[a[0] + i] != '<':
-                        i += 1
-                    trips.append(page[a[0] + 25 : a[0] + i])
-            
-                elif page[a[0] : a[0] + 25] == '<span class="posterdate">':
-                    i = 25
-                    while page[a[0] + i] != '<':
-                        i += 1
-                
-                    d = page[a[0] + 25 : a[0] + i]
-                    d = int(time.mktime(dt.datetime(int(d[:4]),
-                                                    int(d[5:7]),
-                                                    int(d[8:10]),
-                                                    int(d[11:13]),
-                                                    int(d[14:16])).timetuple()))
-                    times.append(d)
-            
-                elif page[a[0] : a[0] + 12] == '<blockquote>':
-                    starts.append(a[0] + 18)
-                
-                elif page[a[0] : a[0] + 13] == '</blockquote>':
-                    ends.append(a[0] - 7)
-    
-        except:
-            print "! Broken post in thread %s" % thread[0]
-            lens = map(len, [ids, authors, emails, trips, times, posts, starts, ends])
-            minl = min(lens)
-            if max(lens) != minl:
-                for a in [ids, authors, emails, trips, times, posts, starts, ends]:
-                    if len(a) > minl:
-                        a = a[:-1]
+    ids, authors, emails, trips, times, posts = [], [], [], [], [], []
 
-    for i in xrange(len(starts)):
-        posts.append(page[starts[i] : ends[i]])
+    erred = False
 
-    l = db.execute('SELECT MAX(time) FROM posts WHERE thread = ?', (unicode(thread[0]),)).fetchone()
-    l = None if l == None else l[0]
+    for p in re.split('</blockquote>', unicode(page, 'utf-8', 'ignore')):
+        m = postregex.search(p)
+        if m is None:
+            if erred:
+                print "! Broken post in thread %s" % thread[0]
+            erred = True
+            continue
 
-    for a in zip(ids, authors, emails, trips, times, posts):
-        if a[4] > l:
+        ids.append(m.group('id'))
+
+        meiru = False
+        mm = meiruregex.match(m.group('author'))
+        if mm is not None:
+            authors.append(mm.group('rest'))
+            emails.append(mm.group('meiru'))
+            meiru = True
+        else:
+            authors.append(m.group('author'))
+
+        mm = meiruregex.match(m.group('trip'))
+        if not meiru and mm is not None:
+            trips.append(mm.group('rest'))
+            emails.append(mm.group('meiru'))
+            meiru = True
+        else:
+            trips.append(m.group('trip'))
+
+        if not meiru:
+            emails.append('')
+
+        times.append(datetime.strptime(m.group('time'),
+                                       "%Y-%m-%d %H:%M").strftime("%s"))
+
+        posts.append(m.group('body'))
+
+    for post in zip(ids, authors, emails, trips, times, posts):
+        if int(post[0]) >= l:
             b = [unicode(thread[0])]
             
-            for y in a:
+            for y in post:
                 if isinstance(y,str): b.append(unicode(y,"utf-8","replace"))
                 else: b.append(y)
-                               
+            
             db.execute(u'INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)', b)
             
-    db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?', (unicode(thread[1]), unicode(thread[0])))
+    db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?',
+               (unicode(thread[1]), unicode(thread[0])))
     db_conn.commit()
 
 
