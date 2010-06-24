@@ -1,6 +1,0 @@
-This is a scraper written for World4ch's /prog/ textboard, though it should work with any Shiichan textboard.
-It was originally written for Python 2.5 by Koen Crolla <cairnarvon@gmail.com>, and was modified to be compatible with Python 2.6 by Ian Price <ianprice90@googlemail.com>.
-
-If you are using Python 2.5 and want to use your board's JSON interface, you will need to install the simplejson module, if you haven't already.
-
-http://pypi.python.org/pypi/simplejson/
