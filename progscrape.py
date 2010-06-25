@@ -161,6 +161,31 @@ if use_json:    # JSON interface
 
         page = json.loads(page)
 
+
+        # Tripcode verification
+
+        tripv, hp = [], None
+
+        for post in page:
+            p = page[post]['name']
+
+            if p is not None and u'!' in p and p != u'SILENT!ABORN':
+                tripv.append(post)
+
+        if len(tripv) > 0:
+            try:
+                hp = urlopen(read_url + thread[0] + '/' + ','.join(tripv))
+
+            except:
+                print "Couldn't access HTML interface to verify ",\
+                      "tripcodes. Exiting."
+                raise
+
+            hp = hp.read()
+
+
+        # Parse posts
+
         for post in page:
             p = page[post]
 
@@ -175,17 +200,8 @@ if use_json:    # JSON interface
                 p['meiru'], p['name'] = m.groups()
 
                 if u'!' in p['name'] and p['name'] != u'SILENT!ABORN':
-                    # Use HTML interface to verify tripcode
-
-                    try:
-                        hp = urlopen(read_url + thread[0] + '/' + post)
-                    except:
-                        print "Couldn't access HTML interface to verify",\
-                              "tripcode. Exiting."
-                        raise
-
                     htripper = re.compile(htripregex % (post, post))
-                    m = htripper.search(hp.read())
+                    m = htripper.search(hp)
 
                     if m is None:
                         print "Malformed post header! Exiting."
