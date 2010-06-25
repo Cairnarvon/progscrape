@@ -22,8 +22,10 @@ You will need [SQLite 3](http://sqlite.org/). Just open the database file using 
 
 If you run into any difficulties which you think might be caused by a bug, either create a new issue on Github, or email **Xarn** at <cairnarvon@gmail.com>.
 
-If you're scraping /prog/, specifically, you will see the following error message:
+If you're scraping /prog/, specifically, you will see the following error messages:
+
+> `subject.txt fail: <a href="mailto:sage"> </a><><>1277494135<><> <>81.43.183.81<><><>1277476613<>327<><>1277496126`
 
 > `subject.txt fail: Anonymous<><>1220909598<><a href="read/prog/1220718054/17">&gt;&gt;17</a><br/>Don't ask me, aniki.<> <>131.116.254.199<><><>1220718054<>6<><>1231185336`
 
-This is not a /prog/scrape bug; it's a Shiichan bug, which /prog/scrape correctly reports. Learn to love it, because it's not going away. Other Shiichan boards may have similar issues.
+These are not /prog/scrape bugs; they're Shiichan bugs, which /prog/scrape correctly reports. Learn to love it, because they're not going away. Other Shiichan boards likely have similar issues.
