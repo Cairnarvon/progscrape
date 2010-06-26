@@ -5,8 +5,10 @@
 db_name  = 'prog.db'
 prog_url = 'http://dis.4chan.org/prog/'
 read_url = 'http://dis.4chan.org/read/prog/'
-json_url = 'http://dis.4chan.org/json/prog/'
+
 use_json = True
+json_url = 'http://dis.4chan.org/json/prog/'
+verify_trips = False
 
 
 # Make sure we're using a compatible version
@@ -61,6 +63,7 @@ print "Fetching subject.txt...",
 
 def urlopen(url):
     req = urllib2.Request(url)
+    req.add_header('User-Agent', 'progscrape/1.0')
     req.add_header('Accept-Encoding', 'gzip')
     req = urllib2.build_opener().open(req)
 
@@ -141,10 +144,19 @@ if len(to_update) > 0 and use_json:
 
 if use_json:    # JSON interface
 
-    meiruregex = u'<a href="mailto:([^"]*)">([^<]*)</a>'
-    meiruregex = re.compile(meiruregex)
+    # Tripcode and email, but no name
+    name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)</a>$'
+    name1 = re.compile(name1, re.DOTALL)
 
-    htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?:<a href="mailto:[^"]*">)?(?P<author>.*?)(?:</a>)?</span><span class="postertrip">(?:<a href="mailto:[^"]*">)?(?P<trip>.*?)(?:</a>)?</span> : <span class="posterdate">[^<]*</span> <span class="id">[^<]*</span></span></h3>'
+    # Email and name, optional tripcode
+    name2 = u'^<a href="mailto:(?P<meiru>[^"]*)">(?P<name>[^<]*)</a>(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)?$'
+    name2 = re.compile(name2, re.DOTALL)
+
+    # Anything without email (ambiguous)
+    name3 = u'^(?P<name>.*)$'
+    name3 = re.compile(name3, re.DOTALL)
+
+    htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">[^<]*</span></span></h3>'
 
     for thread in to_update:
         print "Updating thread %s..." % thread[0]
@@ -162,57 +174,75 @@ if use_json:    # JSON interface
         page = json.loads(page)
 
 
-        # Tripcode verification
+        # Parse names, because the JSON interface sucks
 
         tripv, hp = [], None
 
         for post in page:
-            p = page[post]['name']
+            p = page[post]
 
-            if p is not None and u'!' in p and p != u'SILENT!ABORN':
-                tripv.append(post)
+            if p['name'] is None: p['name'] = u''
 
-        if len(tripv) > 0:
+            m = name1.match(p['name'])
+
+            if m is not None:
+                for n in ('meiru', 'trip'):
+                    p[n] = m.group(n)
+
+                p['name'] = u''
+
+            else:
+                m = name2.match(p['name'])
+
+                if m is not None:
+                    for n in ('meiru', 'trip', 'name'):
+                        p[n] = m.group(n)
+
+                else:
+                    m = name3.match(p['name'])
+
+                    if m is not None:
+                        for n in ('meiru', 'trip'):
+                            p[n] = u''
+
+                        if u'!' in p['name']:
+                            if p['name'] == u'SILENT!ABORN' and \
+                               p['com'] == u'SILENT' and \
+                               p['now'] == u'1234':
+                                # Deleted post
+                                pass
+
+                            else:
+                                tripv.append(post)
+
+
+        if verify_trips and len(tripv) > 0:
             try:
                 hp = urlopen(read_url + thread[0] + '/' + ','.join(tripv))
 
             except:
-                print "Couldn't access HTML interface to verify ",\
-                      "tripcodes. Exiting."
+                print "Couldn't access HTML interface to verify tripcodes.",\
+                      "Exiting."
                 raise
 
             hp = hp.read()
 
 
-        # Parse posts
+        # Verify trips if needed, insert data
 
         for post in page:
             p = page[post]
 
-            if p['name'] == None: p['name'] = u''
+            if verify_trips and post in tripv:
+                htripper = re.compile(htripregex % (post, post))
+                m = htripper.search(hp)
 
-            m = meiruregex.match(p['name'])
-
-            if m is None:
-                p['meiru'], p['trip'] = u'', u''
-
-            else:
-                p['meiru'], p['name'] = m.groups()
-
-                if u'!' in p['name'] and p['name'] != u'SILENT!ABORN':
-                    htripper = re.compile(htripregex % (post, post))
-                    m = htripper.search(hp)
-
-                    if m is None:
-                        print "Malformed post header! Exiting."
-                        sys.exit(1)
-
-                    else:
-                        p['name'] = m.group('author')
-                        p['trip'] = m.group('trip')
+                if m is None:
+                    print "Malformed post header! Exiting."
+                    sys.exit(1)
 
                 else:
-                    p['trip'] = u''
+                    p['name'], p['trip'] = m.group('author'), m.group('trip')
 
             db.execute(u'INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)',
                        (thread[0], post, p['name'], p['meiru'], p['trip'], p['now'], p['com']))
@@ -220,6 +250,7 @@ if use_json:    # JSON interface
         db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?',
                    (unicode(thread[1]), unicode(thread[0])))
         db_conn.commit()
+
 
 else:           # HTML interface
 

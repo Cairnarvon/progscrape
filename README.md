@@ -10,6 +10,8 @@ If you just want to scrape world4ch's /prog/, you can run the script directly (`
 
 If you want to scrape a Shiichan board that isn't on world4ch, you won't be able to use the JSON interface, as that's specific to world4ch. Set `use_json` to `False`, unless you enjoy seeing the same error message every time you run the scraper. You may also do this if you want to force using the HTML interface on world4ch boards. You should be aware that this will be slower and probably more error-prone.
 
+There's a problem with world4ch's JSON interface, in that it can't always tell if a tripcode is genuine (i.e. the user put `#tea` as his name) or not (i.e. he just put `!WokonZwxw2` literally). To solve this problem, /prog/scrape used to rely on the HTML interface. This no longer works, though, so now no attempt is made to verify ambiguous names, and all tripcodes used without an email address are assumed to be fake. If world4ch ever lifts its ban on allowing scrapers access to the HTML interface, or you have another Shiichan board with a JSON interface identical to world4ch's, you can get /prog/scrape to verify tripcodes anyway by setting `verify_trips` to `True`.
+
 The scraped content will be placed in an `sqlite3` database named `prog.db`. If you want to change this, adjust the `db_name` variable. It may be a good idea to use an absolute path.
 
 ## Using the database
