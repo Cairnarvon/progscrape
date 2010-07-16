@@ -102,7 +102,7 @@ to_update = []
 
 for line in subjecttxt.readlines():
     try:
-        parsed = regex.search(unicode(line,"utf-8"))
+        parsed = regex.search(unicode(line, "utf-8", "replace"))
 
         data = parsed.groups()
         result = db.execute('SELECT last_post FROM threads WHERE thread = ?', (unicode(data[3]), )).fetchone()
