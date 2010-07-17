@@ -3,22 +3,103 @@
 # ``Constants''
 
 db_name  = 'prog.db'
-prog_url = 'http://dis.4chan.org/prog/'
-read_url = 'http://dis.4chan.org/read/prog/'
+base_url = 'http://dis.4chan.org'
+board    = '/prog/'
 
 use_json = True
-json_url = 'http://dis.4chan.org/json/prog/'
 verify_trips = False
 
 
 # Make sure we're using a compatible version
 
-from sys import version_info, exit
+from sys import version_info, exit, argv
 
 if version_info[0] != 2 or version_info[1] not in (5, 6):
     print "Your version of Python is not supported at this time.",\
           "Please use Python 2.5 or 2.6."
     exit(1)
+
+
+# Parse command line arguments
+
+from getopt import getopt
+
+if '--help' in argv or '-h' in argv:
+    print "\033[1mUSAGE\033[0m"
+    print
+    print "\t%s [ \033[4mOPTIONS\033[0m... ] [ \033[4mDB\033[0m ]" % argv[0]
+    print
+    print "\033[1mOPTIONS\033[0m"
+    print
+    print "\t\033[1m--json\033[0m"
+    print "\t\tUse the JSON interface, if possible."
+    print
+    print "\t\033[1m--html\033[0m"
+    print "\t\033[1m--no-json\033[0m"
+    print "\t\tUse the HTML interface."
+    print
+    print "\t\033[1m--verify-trips\033[0m"
+    print "\t\033[1m--no-verify-trips\033[0m"
+    print "\t\tWhen using JSON, whether or not to verify ambiguous tripcodes "
+    print "\t\tthrough the HTML interface."
+    print
+    print "\t\033[1m--no-html\033[0m"
+    print "\t\tEquivalent to \033[1m--json --no-verify-trips\033[0m. (default)"
+    print
+    print "\t\033[1m--base-url\033[0m \033[4murl\033[0m"
+    print "\t\tSpecify base URL. (default: \033[7mhttp://dis.4chan.org\033[0m)"
+    print
+    print "\t\033[1m--board\033[0m \033[4mboard\033[0m"
+    print "\t\tSpecify board to scrape. (default: \033[7m/prog/\033[0m)"
+    print
+    print "\t\033[1m--help\033[0m"
+    print "\t\033[1m-h\033[0m"
+    print "\t\tdisplay this message and exit"
+    print
+
+    exit(0)
+
+try:
+    optlist, args = getopt(argv[1:], 'h', ['json', 'html', 'no-html', 'no-json',
+                                           'verify-trips', 'no-verify-trips',
+                                           'base-url=', 'board=', 'help'])
+except:
+    print "Invalid argument! Use \033[1m--help\033[0m for help."
+    exit(1)
+
+for (opt, arg) in optlist:
+    if opt == '--json':
+        use_json = True
+    elif opt in ('--html', '--no-json'):
+        use_json = False
+    elif opt == '--no-html':
+        use_json = True
+        verify_trips = False
+    elif opt == '--verify-trips':
+        verify_trips = True
+    elif opt == '--no-verify-trips':
+        verify_trips = False
+    elif opt == '--base-url':
+        base_url = arg
+    elif opt == '--board':
+        board = arg
+
+if len(args) > 0:
+    db_name = args[0]
+
+
+if len(base_url) > 0 and base_url[-1] == '/':
+    base_url = base_url[:-1]
+
+if len(board) > 0:
+    if board[-1] != '/':
+        board += '/'
+    if board[0] != '/':
+        board = '/' + board
+
+prog_url = base_url + board
+read_url = base_url + "/read" + board
+json_url = base_url + "/json" + board
 
 
 # Set up the database connection first
