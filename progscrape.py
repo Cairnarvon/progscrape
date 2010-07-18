@@ -165,7 +165,7 @@ print "Got it."
 # Parse each line, check with DB, keep a list of all threads to be updated
 
 regex = re.compile(u"""
-    ^(.*?)      # Subject
+    ^(.*)      # Subject
     <>
     (.*?)       # Name
     <>

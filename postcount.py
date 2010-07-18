@@ -28,7 +28,7 @@ if subjecttxt.headers.get('Content-Encoding') == 'gzip':
     subjecttxt = gzip.GzipFile(fileobj=StringIO(subjecttxt.read()))
  
 
-regex = re.compile(u"^[^<]*<>[^<]*<>[^<]*<>-?\d*<>(\d*)<>[^<]*<>\d*\\n$")
+regex = re.compile(u"^.*<>[^<]*<>[^<]*<>-?\d*<>(\d*)<>[^<]*<>\d*\\n$")
 
 c = 0
 
