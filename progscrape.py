@@ -32,25 +32,25 @@ if '--help' in argv or '-h' in argv:
     print "\033[1mOPTIONS\033[0m"
     print
     print "\t\033[1m--json\033[0m"
-    print "\t\tUse the JSON interface, if possible."
+    print "\t\tUse the JSON interface, if possible.", "(default)" if use_json else ""
     print
     print "\t\033[1m--html\033[0m"
     print "\t\033[1m--no-json\033[0m"
-    print "\t\tUse the HTML interface."
+    print "\t\tUse the HTML interface.", "(default)" if not use_json else ""
     print
     print "\t\033[1m--verify-trips\033[0m"
     print "\t\033[1m--no-verify-trips\033[0m"
     print "\t\tWhen using JSON, whether or not to verify ambiguous tripcodes "
-    print "\t\tthrough the HTML interface."
+    print "\t\tthrough the HTML interface. (default: %s)" % ("no", "yes")[verify_trips]
     print
     print "\t\033[1m--no-html\033[0m"
-    print "\t\tEquivalent to \033[1m--json --no-verify-trips\033[0m. (default)"
+    print "\t\tEquivalent to \033[1m--json --no-verify-trips\033[0m."
     print
     print "\t\033[1m--base-url\033[0m \033[4murl\033[0m"
-    print "\t\tSpecify base URL. (default: \033[7mhttp://dis.4chan.org\033[0m)"
+    print "\t\tSpecify base URL. (default: \033[7m%s\033[0m)" % base_url
     print
     print "\t\033[1m--board\033[0m \033[4mboard\033[0m"
-    print "\t\tSpecify board to scrape. (default: \033[7m/prog/\033[0m)"
+    print "\t\tSpecify board to scrape. (default: \033[7m%s\033[0m)" % board
     print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
