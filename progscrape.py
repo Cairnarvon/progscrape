@@ -316,12 +316,13 @@ if use_json:    # JSON interface
             p = page[post]
 
             if verify_trips and post in tripv:
-                htripper = re.compile(htripregex % (post, post))
+                htripper = re.compile(htripregex % (post, post), re.DOTALL)
                 m = htripper.search(hp)
 
                 if m is None:
                     print "Malformed post header! Exiting."
-                    sys.exit(1)
+                    print read_url + thread[0] + '/' + post
+                    exit(1)
 
                 else:
                     p['name'], p['trip'] = m.group('author'), m.group('trip')
