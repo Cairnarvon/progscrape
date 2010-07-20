@@ -16,6 +16,8 @@ The scraped content will be placed in an `sqlite3` database named `prog.db`. If 
 
 Alternatively, you can also configure all of these things by passing certain command line arguments, which will always override the hardcoded configuration. To learn about these, just run the script with the `-h` or `--help` argument.
 
+*Caveat:* trying to scrape all of /prog/ through the HTML interface or through the JSON interface with tripcode verification turned on will eventually trigger world4ch's anti-spam measures and temporarily give you a *403 Forbidden* error. This isn't a huge deal (it won't ban you from /prog/), and you can just continue scraping a few hours later, but that's the reason `verify_trips` defaults to `False`.
+
 ## Using the database
 
 You will need [SQLite 3](http://sqlite.org/). Just open the database file using `sqlite3 prog.db`, and run your SQL queries. Use `.schema` to see the database schema; everything should be pretty obvious.
