@@ -1,0 +1,41 @@
+.TH progscrape 1 "July 2010"
+.SH NAME
+progscrape \- \fBXarn\fR's Shiichan webscraper
+.SH SYNOPSIS
+\fBprogscrape\fR [\fIOPTION\fR]... [\fIDB\fR]
+.SH DESCRIPTION
+This is a webscraper for Shiichan textboards, originally designed for world4ch's /prog/.
+.br
+\fBprogscrape\fR determines what to scrape based on Shiichan's subject.txt, and can scrape over either the usual HTML interface or world4ch's JSON interface. The content scraped is placed in an SQLite 3 database (\fBprog.db\fR by default).
+.SH OPTIONS
+\fB\-\-json\fR
+Use the JSON interface, if possible. (default)
+.TP
+\fB\-\-html\fR, \fB\-\-no-json
+Use the HTML interface.
+.TP
+\fB\-\-verify-trips\fR
+When using the JSON interface, drop to the HTML interface to verify if ambiguous tripcodes are legitimate.
+.TP
+\fB\-\-no\-verify\-trips\fR
+When using the JSON interface, do not try to verify ambiguous tripcodes. (default)
+.TP
+\fB\-\-no-html\fR
+Equivalent to \fB\-\-json \-\-no\-verify\-trips\fR.
+.TP
+\fB\-\-base\-url\fR=\fIURL\fR
+Specify base URL of the board to scrape. (default: \fBhttp://dis.4chan.org\fR)
+.TP
+\fB\-\-board\fR=\fIBOARD\fR
+Specify board to scrape. (default: \fB/prog/\fR)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help message and exit.
+.SH "REPORTING BUGS"
+Report \fBprogscrape\fR bugs to cairnarvon@gmail.com, or on the Github bugtracker: <http://github.com/Cairnarvon/progscrape/issues>.
+.SH COPYRIGHT
+Copyright \(co 2008, 2009, 2010 Koen Crolla.
+.br
+Licensed as free software under the MIT license.
+.SH "SEE ALSO"
+\fBsqlite3\fR(1)
