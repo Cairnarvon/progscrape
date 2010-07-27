@@ -9,6 +9,8 @@ board    = '/prog/'
 use_json = True
 verify_trips = True
 
+progress_bar = False
+
 
 # Make sure we're using a compatible version
 
@@ -46,6 +48,11 @@ if '--help' in argv or '-h' in argv:
     print "\t\033[1m--no-html\033[0m"
     print "\t\tEquivalent to \033[1m--json --no-verify-trips\033[0m."
     print
+    print "\t\033[1m--progress-bar\033[0m"
+    print "\t\033[1m--no-progress-bar\033[0m"
+    print "\t\tWhether to display an animated progress bar or the traditional "
+    print "\t\tprogress report. (default: %s)" % ("no", "yes")[progress_bar]
+    print
     print "\t\033[1m--base-url\033[0m \033[4murl\033[0m"
     print "\t\tSpecify base URL. (default: \033[7m%s\033[0m)" % base_url
     print
@@ -62,6 +69,7 @@ if '--help' in argv or '-h' in argv:
 try:
     optlist, args = getopt(argv[1:], 'h', ['json', 'html', 'no-html', 'no-json',
                                            'verify-trips', 'no-verify-trips',
+                                           'progress-bar', 'no-progress-bar',
                                            'base-url=', 'board=', 'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
@@ -83,6 +91,10 @@ for (opt, arg) in optlist:
         base_url = arg
     elif opt == '--board':
         board = arg
+    elif opt == '--progress-bar':
+        progress_bar = True
+    elif opt == '--no-progress-bar':
+        progress_bar = False
 
 if len(args) > 0:
     db_name = args[0]
@@ -206,6 +218,12 @@ print "%d threads to update." % tot
 
 from datetime import datetime
 
+def show_progress(idx, tot):
+    perc = idx * 100.0 / tot
+    bars = "".join(map(lambda i: '#' if i <= perc else ' ', range(5, 101, 5)))
+
+    print '\033[1AScraping... [%s] %.2f%% (%d/%d)' % (bars, perc, idx, tot)
+
 if tot > 0 and use_json:
     if version_info[1] == 6:
         import json
@@ -227,6 +245,10 @@ if tot > 0 and use_json:
 
 idx = 1
 
+if progress_bar:
+    print
+
+
 if use_json:    # JSON interface
 
     # Tripcode and email, but no name
@@ -244,7 +266,10 @@ if use_json:    # JSON interface
     htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">[^<]*</span></span></h3>'
 
     for thread in to_update:
-        print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
+        if progress_bar:
+            show_progress(idx, tot)
+        else:
+            print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
         idx += 1
 
         l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',
@@ -357,7 +382,10 @@ else:           # HTML interface
     meiruregex = re.compile(meiruregex)
 
     for thread in to_update:
-        print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
+        if progress_bar:
+            show_progress(idx, tot)
+        else:
+            print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
         idx += 1
 
         l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',

@@ -26,6 +26,7 @@ __progscrape()
     if [[ "$cur" == -* ]]; then
         COMPREPLY=( $( compgen -W '--json --no-json \
             --html --no-html \
+            --progress-bar --no-progress-bar \
             --verify-trips --no-verify-trips \
             --base-url --board \
             --help -h' -- $cur ) )
