@@ -28,7 +28,7 @@ __progscrape()
             --html --no-html \
             --progress-bar --no-progress-bar \
             --verify-trips --no-verify-trips \
-            --base-url --board \
+            --base-url --port --board \
             --help -h' -- $cur ) )
     else
         COMPREPLY=( $( compgen -W '$cur*.db' ) )

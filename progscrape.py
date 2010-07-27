@@ -3,7 +3,8 @@
 # ``Constants''
 
 db_name  = 'prog.db'
-base_url = 'http://dis.4chan.org'
+base_url = 'dis.4chan.org'
+port     = 80
 board    = '/prog/'
 
 use_json = True
@@ -56,6 +57,9 @@ if '--help' in argv or '-h' in argv:
     print "\t\033[1m--base-url\033[0m \033[4murl\033[0m"
     print "\t\tSpecify base URL. (default: \033[7m%s\033[0m)" % base_url
     print
+    print "\t\033[1m--port\033[0m \033[4mport\033[0m"
+    print "\t\tSpecify the port the webserver is running on. (default: %d)" % port
+    print
     print "\t\033[1m--board\033[0m \033[4mboard\033[0m"
     print "\t\tSpecify board to scrape. (default: \033[7m%s\033[0m)" % board
     print
@@ -70,7 +74,8 @@ try:
     optlist, args = getopt(argv[1:], 'h', ['json', 'html', 'no-html', 'no-json',
                                            'verify-trips', 'no-verify-trips',
                                            'progress-bar', 'no-progress-bar',
-                                           'base-url=', 'board=', 'help'])
+                                           'base-url=', 'port=', 'board=',
+                                           'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
     exit(1)
@@ -88,7 +93,11 @@ for (opt, arg) in optlist:
     elif opt == '--no-verify-trips':
         verify_trips = False
     elif opt == '--base-url':
+        if arg[:7] == "http://":
+            arg = arg[7:]
         base_url = arg
+    elif opt == '--port':
+        port = int(arg)
     elif opt == '--board':
         board = arg
     elif opt == '--progress-bar':
@@ -109,9 +118,9 @@ if len(board) > 0:
     if board[0] != '/':
         board = '/' + board
 
-prog_url = base_url + board
-read_url = base_url + "/read" + board
-json_url = base_url + "/json" + board
+prog_url = board
+read_url = "/read" + board
+json_url = "/json" + board
 
 
 # Set up the database connection first
@@ -149,21 +158,23 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import urllib2, re, gzip
+import httplib, re, gzip
 from StringIO import StringIO
 
 print "Fetching subject.txt...",
 
-def urlopen(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', 'progscrape/1.0')
-    req.add_header('Accept-Encoding', 'gzip')
-    req = urllib2.build_opener().open(req)
+def urlopen(url, con=[None]):
+    if con[0] is None:
+        con[0] = httplib.HTTPConnection(base_url, port)
 
-    if req.headers.get('Content-Encoding') == 'gzip':
-        return gzip.GzipFile(fileobj=StringIO(req.read()))
+    con[0].request('GET', url, headers={'User-Agent': 'progscrape/1.1',
+                                        'Accept-Encoding': 'gzip'})
+    resp = con[0].getresponse()
+
+    if resp.getheader('Content-Encoding') == 'gzip':
+        return gzip.GzipFile(fileobj=StringIO(resp.read()))
     else:
-        return req
+        return resp
 
 try:
     subjecttxt = urlopen(prog_url + 'subject.txt')
@@ -451,5 +462,10 @@ else:           # HTML interface
                    (unicode(thread[1]), unicode(thread[0])))
         db_conn.commit()
 
+
+try:
+    urlopen.func_defaults[0].close()
+except:
+    pass
 
 print "All done!"
