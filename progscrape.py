@@ -197,14 +197,16 @@ for line in subjecttxt.readlines():
         # Failed to parse line; skip it
         print "subject.txt fail:", line
 
-print "%d threads to update." % len(to_update)
+tot = len(to_update)
+
+print "%d threads to update." % tot
 
 
 # Fetch new posts
 
 from datetime import datetime
 
-if len(to_update) > 0 and use_json:
+if tot > 0 and use_json:
     if version_info[1] == 6:
         import json
 
@@ -223,6 +225,7 @@ if len(to_update) > 0 and use_json:
         print "Can't access JSON interface! Using HTML interface."
         use_json = False
 
+idx = 1
 
 if use_json:    # JSON interface
 
@@ -241,7 +244,8 @@ if use_json:    # JSON interface
     htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">[^<]*</span></span></h3>'
 
     for thread in to_update:
-        print "Updating thread %s..." % thread[0]
+        print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
+        idx += 1
 
         l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',
                        (thread[0],)).fetchone()
@@ -353,7 +357,8 @@ else:           # HTML interface
     meiruregex = re.compile(meiruregex)
 
     for thread in to_update:
-        print "Updating thread %s..." % thread[0]
+        print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
+        idx += 1
 
         l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',
                        (thread[0],)).fetchone()
