@@ -12,15 +12,13 @@ If you just want to scrape world4ch's /prog/, you can run the script directly (`
 
 If you want to scrape a Shiichan board that isn't on world4ch, you won't be able to use the JSON interface, as that's specific to world4ch. Set `use_json` to `False`, unless you enjoy seeing the same error message every time you run the scraper. You may also do this if you want to force using the HTML interface on world4ch boards. You should be aware that this will be slower and probably more error-prone.
 
-There's a problem with world4ch's JSON interface, in that it can't always tell if a tripcode is genuine (i.e. the user put `#tea` as his name) or not (i.e. he just put `!WokonZwxw2` literally). To solve this problem, /prog/scrape can use the HTML interface to verify ambiguous tripcodes. By default it doesn't, but if you want it to, set `verify_trips` to `True`. If you don't, it will be assumed that any ambiguous tripcode is fake.
+There's a problem with world4ch's JSON interface, in that it can't always tell if a tripcode is genuine (i.e. the user put `#tea` as his name) or not (i.e. he just put `!WokonZwxw2` literally). To solve this problem, /prog/scrape uses the HTML interface to verify ambiguous tripcodes. If you don't want it to do this, set `verify_trips` to `False`. If you do this, it will be assumed that any ambiguous tripcode is fake.
 
 The scraped content will be placed in an `sqlite3` database named `prog.db`. If you want to change this, adjust the `db_name` variable. It may be a good idea to use an absolute path.
 
 Alternatively, you can also configure all of these things by passing certain command line arguments, which will always override the hardcoded configuration. To learn about these, just run the script with the `-h` or `--help` argument.
 
 If you intend to run /prog/scrape a lot with varying options and are using bash (version 2.04 or up), `progscrape.sh` provides sensible auto-completion. Just put it in `/etc/bash_completion.d/`, append it to `/etc/bash_completion`, or source it in your `.bashrc`, depending on your system.
-
-**Caveat:** trying to scrape all of /prog/ through the HTML interface or through the JSON interface with tripcode verification turned on will eventually trigger world4ch's anti-spam measures and temporarily give you a *403 Forbidden* error. This isn't a huge deal (it won't ban you from /prog/), and you can just continue scraping a few hours later, but that's the reason `verify_trips` defaults to `False`.
 
 ## Using the database
 

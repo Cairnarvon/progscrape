@@ -7,7 +7,7 @@ base_url = 'http://dis.4chan.org'
 board    = '/prog/'
 
 use_json = True
-verify_trips = False
+verify_trips = True
 
 
 # Make sure we're using a compatible version
@@ -299,8 +299,11 @@ if use_json:    # JSON interface
 
 
         if verify_trips and len(tripv) > 0:
+            tripv_url = read_url + thread[0] + '/'
+            if len(tripv) < 200:
+                tripv_url += ','.join(tripv)
             try:
-                hp = urlopen(read_url + thread[0] + '/' + ','.join(tripv))
+                hp = urlopen(tripv_url)
 
             except:
                 print "Couldn't access HTML interface to verify tripcodes.",\
