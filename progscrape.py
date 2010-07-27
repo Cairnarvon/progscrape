@@ -370,11 +370,11 @@ if use_json:    # JSON interface
 else:           # HTML interface
 
     postregex = u"""\
-<h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">[^<]*</span></span></h3>
+<h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">.*?</span></span></h3>
 <blockquote>
-\t<p>
+\t(?:<div class="aa">)?<p>
 (?P<body>.*?)
-\t</p>
+\t</p>(?:</div>)?
 """
     postregex = re.compile(postregex, re.DOTALL)
 
