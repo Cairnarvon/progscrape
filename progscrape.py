@@ -274,7 +274,7 @@ if use_json:    # JSON interface
     name3 = u'^(?P<name>.*)$'
     name3 = re.compile(name3, re.DOTALL)
 
-    htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">[^<]*</span></span></h3>'
+    htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">.*?</span></span></h3>'
 
     for thread in to_update:
         if progress_bar:
