@@ -14,7 +14,32 @@ You don't need to run this script yourself, but it's a nice first step to
 verify database integrity.
 """
 
-board_url = "http://dis.4chan.org/prog/"
+base_url = "http://dis.4chan.org"
+board = '/prog/'
+
+
+from sys import argv, exit
+from getopt import getopt
+
+try:
+    optlist, args = getopt(argv[1:], 'h', ['base-url=', 'board='])
+except:
+    print "Invalid argument!"
+    exit(1)
+
+for (opt, arg) in optlist:
+    if opt == '--base-url':
+        if arg[-1] == '/':
+            arg = arg[:-1]
+        base_url = arg
+    elif opt == '--board':
+        if arg[-1] != '/':
+            arg += '/'
+        if arg[0] != '/':
+            arg = '/' + arg
+        board = arg
+
+board_url = base_url + board
 
 
 import urllib2, gzip, re, sys
