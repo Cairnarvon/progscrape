@@ -31,7 +31,7 @@ __progscrape()
             --base-url --port --board \
             --help -h' -- $cur ) )
     else
-        COMPREPLY=( $( compgen -W '$cur*.db' ) )
+        _filedir db
     fi
 }
 complete -F __progscrape $filenames progscrape
