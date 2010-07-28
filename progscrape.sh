@@ -30,7 +30,7 @@ __progscrape()
             --verify-trips --no-verify-trips \
             --base-url --port --board \
             --help -h' -- $cur ) )
-    else
+    elif [ ! -z $(type -t _filedir) ]; then
         _filedir db
     fi
 }
