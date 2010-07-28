@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python
 
 # ``Constants''
 
@@ -15,7 +15,7 @@ progress_bar = False
 
 # Make sure we're using a compatible version
 
-from sys import version_info, exit, argv
+from sys import version_info, exit, argv, stdout
 
 if version_info[0] != 2 or version_info[1] not in (5, 6):
     print "Your version of Python is not supported at this time.",\
@@ -162,6 +162,7 @@ import httplib, re, gzip
 from StringIO import StringIO
 
 print "Fetching subject.txt...",
+stdout.flush()
 
 def urlopen(url, con=[None]):
     if con[0] is None:
