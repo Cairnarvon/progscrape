@@ -53,12 +53,12 @@ if subjecttxt.headers.get('Content-Encoding') == 'gzip':
     subjecttxt = gzip.GzipFile(fileobj=StringIO(subjecttxt.read()))
  
 
-regex = re.compile(u"^.*<>[^<]*<>[^<]*<>-?\d*<>(\d*)<>[^<]*<>\d*\\n$")
+regex = re.compile("^.*<>.*?<>.*?<>-?\d*<>(\d*)<>.*?<>\d*\\n$")
 
 c = 0
 
 for line in subjecttxt.readlines():
-    m = regex.search(unicode(line, "utf-8"))
+    m = regex.search(unicode(line, 'latin-1', 'ignore'))
 
     if m is not None:
         c += int(m.group(1))
