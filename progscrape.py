@@ -206,16 +206,24 @@ regex = re.compile(u"""
 to_update = []
 
 for line in subjecttxt.readlines():
-    try:
-        parsed = regex.search(unicode(line, "utf-8", "replace"))
+    line = unicode(line, "latin-1")
 
-        data = parsed.groups()
-        result = db.execute('SELECT last_post FROM threads WHERE thread = ?', (unicode(data[3]), )).fetchone()
+    try:
+        parsed = regex.match(line)
+
+        data = map(lambda s: s.encode('latin-1').decode('utf-8', 'replace'),
+                   parsed.groups())
+
+        result = db.execute('SELECT last_post FROM threads WHERE thread = ?',
+                            (data[3],)).fetchone()
+
         if result is None:
-            db.execute('INSERT INTO threads VALUES (?, ?, ?)', (unicode(data[3]), unicode(data[0]), 0))
-            to_update.append((unicode(data[3]), unicode(data[6])))
+            db.execute('INSERT INTO threads VALUES (?, ?, ?)',
+                       (data[3], data[0], 0))
+            to_update.append((data[3], data[6]))
+
         elif int(result[0]) < int(data[6]):
-            to_update.append((unicode(data[3]), unicode(data[6])))
+            to_update.append((data[3], data[6]))
 
     except:
         # Failed to parse line; skip it
