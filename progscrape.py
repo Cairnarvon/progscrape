@@ -15,22 +15,22 @@ progress_bar = False
 
 # Make sure we're using a compatible version
 
-from sys import version_info, exit, argv, stdout
+import sys
 
-if version_info[0] != 2 or version_info[1] not in (5, 6):
+if sys.version_info[0] != 2 or sys.version_info[1] not in (5, 6):
     print "Your version of Python is not supported at this time.",\
           "Please use Python 2.5 or 2.6."
-    exit(1)
+    sys.exit(1)
 
 
 # Parse command line arguments
 
 from getopt import getopt
 
-if '--help' in argv or '-h' in argv:
+if '--help' in sys.argv or '-h' in sys.argv:
     print "\033[1mUSAGE\033[0m"
     print
-    print "\t%s [ \033[4mOPTIONS\033[0m... ] [ \033[4mDB\033[0m ]" % argv[0]
+    print "\t%s [ \033[4mOPTIONS\033[0m... ] [ \033[4mDB\033[0m ]" % sys.argv[0]
     print
     print "\033[1mOPTIONS\033[0m"
     print
@@ -63,22 +63,28 @@ if '--help' in argv or '-h' in argv:
     print "\t\033[1m--board\033[0m \033[4mboard\033[0m"
     print "\t\tSpecify board to scrape. (default: \033[7m%s\033[0m)" % board
     print
+    print "\t\033[1m--partial\033[0m"
+    print "\t\tRead a list of thread IDs on standard input and only scrape"
+    print "\t\tthose (provided they're valid IDs and need updating)."
+    print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
     print "\t\tdisplay this message and exit"
     print
 
-    exit(0)
+    sys.exit(0)
 
 try:
-    optlist, args = getopt(argv[1:], 'h', ['json', 'html', 'no-html', 'no-json',
-                                           'verify-trips', 'no-verify-trips',
-                                           'progress-bar', 'no-progress-bar',
-                                           'base-url=', 'port=', 'board=',
-                                           'help'])
+    optlist, args = getopt(sys.argv[1:], 'h', ['json', 'html', 'no-html', 'no-json',
+                                               'verify-trips', 'no-verify-trips',
+                                               'progress-bar', 'no-progress-bar',
+                                               'base-url=', 'port=', 'board=',
+                                               'partial', 'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
-    exit(1)
+    sys.exit(1)
+
+partial = False
 
 for (opt, arg) in optlist:
     if opt == '--json':
@@ -104,6 +110,11 @@ for (opt, arg) in optlist:
         progress_bar = True
     elif opt == '--no-progress-bar':
         progress_bar = False
+    elif opt == '--partial':
+        partial = True
+        if sys.stdin.isatty():
+            print "Feed me thread IDs on stdin."
+            sys.exit(1)
 
 if len(args) > 0:
     db_name = args[0]
@@ -162,7 +173,7 @@ import httplib, re, gzip
 from StringIO import StringIO
 
 print "Fetching subject.txt...",
-stdout.flush()
+sys.stdout.flush()
 
 def urlopen(url, con=[None]):
     if con[0] is None:
@@ -229,6 +240,19 @@ for line in subjecttxt.readlines():
         # Failed to parse line; skip it
         print "subject.txt fail:", line
 
+if partial:
+    threads = "".join(sys.stdin.readlines()).split()
+    to_update = filter(lambda (thread, _): thread in threads, to_update)
+
+    if len(to_update) != len(threads):
+        print "Some of the threads you listed either don't need updating or",\
+              "don't exist:"
+        
+        to_scrape = [thread for (thread, _) in to_update]
+        for thread in threads:
+            if thread not in to_scrape:
+                print " ", thread
+
 tot = len(to_update)
 
 print "%d threads to update." % tot
@@ -245,7 +269,7 @@ def show_progress(idx, tot):
     print '\033[1AScraping... [%s] %.2f%% (%d/%d)' % (bars, perc, idx, tot)
 
 if tot > 0 and use_json:
-    if version_info[1] == 6:
+    if sys.version_info[1] == 6:
         import json
 
     else:
@@ -374,7 +398,7 @@ if use_json:    # JSON interface
                 if m is None:
                     print "Malformed post header! Exiting."
                     print read_url + thread[0] + '/' + post
-                    exit(1)
+                    sys.exit(1)
 
                 else:
                     p['name'], p['trip'] = m.group('author'), m.group('trip')
