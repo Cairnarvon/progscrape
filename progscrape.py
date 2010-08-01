@@ -473,7 +473,7 @@ else:           # HTML interface
 
 
 try:
-    urlopen.func_defaults[0].close()
+    urlopen.func_defaults[0][0].close()
 except:
     pass
 
