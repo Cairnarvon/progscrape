@@ -259,7 +259,7 @@ if tot > 0 and use_json:
     try:
         json_test = urlopen(json_url + to_update[0][0])
 
-    except urllib2.HTTPError:
+    except:
         print "Can't access JSON interface! Using HTML interface."
         use_json = False
 
