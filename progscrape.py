@@ -9,6 +9,7 @@ board    = '/prog/'
 
 use_json = True
 verify_trips = True
+no_aborn = False
 
 progress_bar = False
 
@@ -46,6 +47,11 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\tWhen using JSON, whether or not to verify ambiguous tripcodes "
     print "\t\tthrough the HTML interface. (default: %s)" % ("no", "yes")[verify_trips]
     print
+    print "\t\033[1m--aborn\033[0m"
+    print "\t\033[1m--no-aborn\033[0m"
+    print "\t\tWhen using JSON, whether or not to include deleted posts."
+    print "\t\t(default: %s)" % ("yes", "no")[no_aborn]
+    print
     print "\t\033[1m--no-html\033[0m"
     print "\t\tEquivalent to \033[1m--json --no-verify-trips\033[0m."
     print
@@ -79,7 +85,8 @@ try:
                                                'verify-trips', 'no-verify-trips',
                                                'progress-bar', 'no-progress-bar',
                                                'base-url=', 'port=', 'board=',
-                                               'partial', 'help'])
+                                               'partial', 'aborn', 'no-aborn',
+                                               'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
     sys.exit(1)
@@ -115,6 +122,10 @@ for (opt, arg) in optlist:
         if sys.stdin.isatty():
             print "Feed me thread IDs on stdin."
             sys.exit(1)
+    elif opt == '--aborn':
+        aborn = True
+    elif opt == '--no-aborn':
+        no_aborn = True
 
 if len(args) > 0:
     db_name = args[0]
@@ -403,10 +414,17 @@ if use_json:    # JSON interface
                 else:
                     p['name'], p['trip'] = m.group('author'), m.group('trip')
 
-            db.execute(u'INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                       (thread[0], post, p['name'], p['meiru'], p['trip'], p['now'], p['com']))
+            if not no_aborn or p['name'] != u'SILENT!ABORN' or \
+                               p['com'] != u'SILENT' or \
+                               p['now'] != u'1234':
+                db.execute(u'insert into posts \
+                             (thread, id, author, email, trip, time, body) \
+                             values (?, ?, ?, ?, ?, ?, ?)',
+                           (thread[0], post,
+                            p['name'], p['meiru'], p['trip'],
+                            p['now'], p['com']))
 
-        db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?',
+        db.execute(u'update threads set last_post = ? where thread = ?',
                    (unicode(thread[1]), unicode(thread[0])))
         db_conn.commit()
 

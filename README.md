@@ -56,7 +56,7 @@ The JSON interface doesn't split up poster names, tripcodes, and e-mails into se
 
 #### SILENT!ABORN
 
-When using the JSON interface, you may notice a lot of posts posted by SILENT!ABORN on timestamp 1234, with a body of "SILENT". These are deleted posts. If you are haunted by them, they don't show up in the HTML interface at all.
+When using the JSON interface, you may notice a lot of posts posted by SILENT!ABORN on timestamp 1234, with a body of "SILENT". These are deleted posts. If you are haunted by them, using `--no-aborn` will prevent them from being entered into the database, and they don't show up in the HTML interface at all.
 
 #### `postcount.py`
 

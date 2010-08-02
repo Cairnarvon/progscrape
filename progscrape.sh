@@ -29,7 +29,7 @@ __progscrape()
             --progress-bar --no-progress-bar \
             --verify-trips --no-verify-trips \
             --base-url --port --board \
-            --partial \
+            --aborn --no-aborn --partial \
             --help -h' -- $cur ) )
     elif [ ! -z $(type -t _filedir) ]; then
         _filedir db

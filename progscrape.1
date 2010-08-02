@@ -20,6 +20,12 @@ When using the JSON interface, drop to the HTML interface to verify if ambiguous
 \fB\-\-no\-verify\-trips\fR
 When using the JSON interface, do not try to verify ambiguous tripcodes.
 .TP
+\fB\-\-aborn\fR
+When using the JSON interface, keep deleted posts. They will exist in the database with author "SILENT!ABORN", content "SILENT", and timestamp 1234. (default)
+.TP
+\fB\-\-no\-aborn\fR
+When using the JSON interface, ignore deleted posts.
+.TP
 \fB\-\-no\-html\fR
 Equivalent to \fB\-\-json \-\-no\-verify\-trips\fR.
 .TP
