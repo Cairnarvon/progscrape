@@ -123,7 +123,7 @@ for (opt, arg) in optlist:
             print "Feed me thread IDs on stdin."
             sys.exit(1)
     elif opt == '--aborn':
-        aborn = True
+        no_aborn = False
     elif opt == '--no-aborn':
         no_aborn = True
 
@@ -314,11 +314,12 @@ if use_json:    # JSON interface
     name2 = u'^<a href="mailto:(?P<meiru>[^"]*)">(?P<name>[^<]*)</a>(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)?$'
     name2 = re.compile(name2, re.DOTALL)
 
-    # Anything without email (ambiguous)
-    name3 = u'^(?P<name>.*)$'
-    name3 = re.compile(name3, re.DOTALL)
+    # Ambiguous tripcode
+    maybe_trip = u'^.*?!(?:[a-zA-Z0-9./]{10}(?:![a-zA-Z0-9+/]{15})?|[a-zA-Z0-9+/]{15})$'
+    maybe_trip = re.compile(maybe_trip, re.DOTALL)
 
     htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">.*?</span></span></h3>'
+
 
     for thread in to_update:
         if progress_bar:
@@ -352,6 +353,8 @@ if use_json:    # JSON interface
             m = name1.match(p['name'])
 
             if m is not None:
+                # Tripcode and email, but no name
+
                 for n in ('meiru', 'trip'):
                     p[n] = m.group(n)
 
@@ -361,25 +364,21 @@ if use_json:    # JSON interface
                 m = name2.match(p['name'])
 
                 if m is not None:
+                    # Email and name, optional tripcode
+
                     for n in ('meiru', 'trip', 'name'):
                         p[n] = m.group(n)
 
                 else:
-                    m = name3.match(p['name'])
+                    # Anything without e-mail
 
-                    if m is not None:
-                        for n in ('meiru', 'trip'):
-                            p[n] = u''
+                    for n in ('meiru', 'trip'):
+                        p[n] = u''
 
-                        if u'!' in p['name']:
-                            if p['name'] == u'SILENT!ABORN' and \
-                               p['com'] == u'SILENT' and \
-                               p['now'] == u'1234':
-                                # Deleted post
-                                pass
+                    if maybe_trip.match(p['name']):
+                        # Ambiguous tripcode
 
-                            else:
-                                tripv.append(post)
+                        tripv.append(post)
 
 
         if verify_trips and len(tripv) > 0:
