@@ -271,7 +271,7 @@ print "%d threads to update." % tot
 
 # Fetch new posts
 
-from datetime import datetime
+import time
 
 def show_progress(idx, tot):
     perc = idx * 100.0 / tot
@@ -419,9 +419,10 @@ if use_json:    # JSON interface
                 db.execute(u'insert into posts \
                              (thread, id, author, email, trip, time, body) \
                              values (?, ?, ?, ?, ?, ?, ?)',
-                           (thread[0], post,
-                            p['name'], p['meiru'], p['trip'],
-                            p['now'], p['com']))
+                           map(lambda s: unicode(s, "utf-8", "replace") if type(s) == str else s,
+                               (thread[0], post,
+                                p['name'], p['meiru'], p['trip'],
+                                p['now'], p['com'])))
 
         db.execute(u'update threads set last_post = ? where thread = ?',
                    (unicode(thread[1]), unicode(thread[0])))
@@ -493,8 +494,8 @@ else:           # HTML interface
             if not meiru:
                 emails.append('')
 
-            times.append(datetime.strptime(m.group('time'),
-                                           "%Y-%m-%d %H:%M").strftime("%s"))
+            times.append(int(time.mktime(time.strptime(m.group('time'),
+                                                       "%Y-%m-%d %H:%M"))))
 
             posts.append(m.group('body'))
     
