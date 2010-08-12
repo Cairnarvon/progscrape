@@ -18,9 +18,9 @@ progress_bar = False
 
 import sys
 
-if sys.version_info[0] != 2 or sys.version_info[1] not in (5, 6):
+if sys.version_info[0] != 2 or sys.version_info[1] < 5:
     print "Your version of Python is not supported at this time.",\
-          "Please use Python 2.5 or 2.6."
+          "Please use Python 2.x, where x > 4."
     sys.exit(1)
 
 
@@ -280,10 +280,10 @@ def show_progress(idx, tot):
     print '\033[1AScraping... [%s] %.2f%% (%d/%d)' % (bars, perc, idx, tot)
 
 if tot > 0 and use_json:
-    if sys.version_info[1] == 6:
+    try:
         import json
 
-    else:
+    except ImportError:
         try:
             import simplejson as json
 
