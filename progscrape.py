@@ -227,7 +227,7 @@ regex = re.compile(u"""
     \\n$""", re.VERBOSE)
 to_update = []
 
-for line in subjecttxt.readlines():
+for line in subjecttxt.read().splitlines(True):
     line = unicode(line, "latin-1")
 
     try:
