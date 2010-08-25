@@ -28,7 +28,7 @@ __progscrape()
             --html --no-html \
             --progress-bar --no-progress-bar \
             --verify-trips --no-verify-trips \
-            --base-url --port --board \
+            --base-url --port --board --charset \
             --aborn --no-aborn --partial \
             --help -h' -- $cur ) )
     elif [ ! -z $(type -t _filedir) ]; then

@@ -6,6 +6,7 @@ db_name  = 'prog.db'
 base_url = 'dis.4chan.org'
 port     = 80
 board    = '/prog/'
+charset  = 'utf-8'
 
 use_json = True
 verify_trips = True
@@ -69,6 +70,9 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\033[1m--board\033[0m \033[4mboard\033[0m"
     print "\t\tSpecify board to scrape. (default: \033[7m%s\033[0m)" % board
     print
+    print "\t\033[1m--charset\033[0m \033[4mcharset\033[0m"
+    print "\t\tSpecify the character encoding the board uses. (default: \033[7m%s\033[0m)" % charset
+    print
     print "\t\033[1m--partial\033[0m"
     print "\t\tRead a list of thread IDs on standard input and only scrape"
     print "\t\tthose (provided they're valid IDs and need updating)."
@@ -86,7 +90,7 @@ try:
                                                'progress-bar', 'no-progress-bar',
                                                'base-url=', 'port=', 'board=',
                                                'partial', 'aborn', 'no-aborn',
-                                               'help'])
+                                               'charset=', 'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
     sys.exit(1)
@@ -126,6 +130,13 @@ for (opt, arg) in optlist:
         no_aborn = False
     elif opt == '--no-aborn':
         no_aborn = True
+    elif opt == '--charset':
+        try:
+            "abc".decode(arg)
+        except LookupError:
+            print "Unknown encoding specified: \033[1m%s\033[0m" % arg
+        else:
+            charset = arg
 
 if len(args) > 0:
     db_name = args[0]
@@ -233,7 +244,7 @@ for line in subjecttxt.read().splitlines(True):
     try:
         parsed = regex.match(line)
 
-        data = map(lambda s: s.encode('latin-1').decode('utf-8', 'replace'),
+        data = map(lambda s: s.encode('latin-1').decode(charset, 'replace'),
                    parsed.groups())
 
         result = db.execute('SELECT last_post FROM threads WHERE thread = ?',
@@ -419,7 +430,7 @@ if use_json:    # JSON interface
                 db.execute(u'insert into posts \
                              (thread, id, author, email, trip, time, body) \
                              values (?, ?, ?, ?, ?, ?, ?)',
-                           map(lambda s: unicode(s, "utf-8", "replace") if type(s) == str else s,
+                           map(lambda s: unicode(s, charset, "replace") if type(s) == str else s,
                                (thread[0], post,
                                 p['name'], p['meiru'], p['trip'],
                                 p['now'], p['com'])))
@@ -464,7 +475,7 @@ else:           # HTML interface
 
         erred = False
 
-        for p in re.split('</blockquote>', unicode(page, 'utf-8', 'ignore')):
+        for p in re.split('</blockquote>', unicode(page, charset, 'replace')):
             m = postregex.search(p)
             if m is None:
                 if erred:
@@ -504,8 +515,10 @@ else:           # HTML interface
                 b = [unicode(thread[0])]
                 
                 for y in post:
-                    if isinstance(y,str): b.append(unicode(y,"utf-8","replace"))
-                    else: b.append(y)
+                    if type(y) == str:
+                        b.append(unicode(y, charset, 'replace'))
+                    else:
+                        b.append(y)
                 
                 db.execute(u'INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)', b)
             
