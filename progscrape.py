@@ -349,7 +349,13 @@ if use_json:    # JSON interface
             print "Can't access %s! Exiting." % (json_url + thread[0])
             raise
 
-        page = json.loads(page)
+        try:
+            page = json.loads(page)
+        except ValueError:
+            print "! Error: can't parse JSON, thread %s skipped." % thread[0]
+            if progress_bar:
+                print
+            continue
 
 
         # Parse names, because the JSON interface sucks
