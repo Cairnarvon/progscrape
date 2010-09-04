@@ -433,7 +433,7 @@ if use_json:    # JSON interface
             if not no_aborn or p['name'] != u'SILENT!ABORN' or \
                                p['com'] != u'SILENT' or \
                                p['now'] != u'1234':
-                db.execute(u'insert into posts \
+                db.execute(u'insert or replace into posts \
                              (thread, id, author, email, trip, time, body) \
                              values (?, ?, ?, ?, ?, ?, ?)',
                            map(lambda s: unicode(s, charset, "replace") if type(s) == str else s,
@@ -526,7 +526,9 @@ else:           # HTML interface
                     else:
                         b.append(y)
                 
-                db.execute(u'INSERT INTO posts (thread, id, author, email, trip, time, body) VALUES (?, ?, ?, ?, ?, ?, ?)', b)
+                db.execute(u'insert or replace into posts \
+                             (thread, id, author, email, trip, time, body) \
+                             values (?, ?, ?, ?, ?, ?, ?)', b)
             
         db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?',
                    (unicode(thread[1]), unicode(thread[0])))
