@@ -212,7 +212,7 @@ sys.stdout.flush()
 def urlopen(url):
     con = httplib.HTTPConnection(base_url, port)
 
-    con.request('GET', url, headers={'User-Agent': 'progscrape/1.1',
+    con.request('GET', url, headers={'User-Agent': 'progscrape/1.2',
                                         'Accept-Encoding': 'gzip'})
     resp = con.getresponse()
 
