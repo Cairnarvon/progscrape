@@ -213,7 +213,7 @@ def urlopen(url):
     con = httplib.HTTPConnection(base_url, port)
 
     con.request('GET', url, headers={'User-Agent': 'progscrape/1.2',
-                                        'Accept-Encoding': 'gzip'})
+                                     'Accept-Encoding': 'gzip'})
     resp = con.getresponse()
 
     con.close()
@@ -281,13 +281,13 @@ for line in subjecttxt.read().splitlines(True):
 
 if partial:
     threads = "".join(sys.stdin.readlines()).split()
-    to_update = filter(lambda (thread, _): thread in threads, to_update)
+    to_update = filter(lambda (thread, x, y): thread in threads, to_update)
 
     if len(to_update) != len(threads):
         print "Some of the threads you listed either don't need updating or",\
               "don't exist:"
         
-        to_scrape = [thread for (thread, _) in to_update]
+        to_scrape = [thread for (thread, x, y) in to_update]
         for thread in threads:
             if thread not in to_scrape:
                 print " ", thread
@@ -306,12 +306,6 @@ print "%d threads to update." % tot
 # Fetch new posts
 
 import time, threading
-
-def show_progress(idx, tot):
-    perc = idx * 100.0 / tot
-    bars = "".join(map(lambda i: '#' if i <= perc else ' ', range(5, 101, 5)))
-
-    print '\033[1AScraping... [%s] %.2f%% (%d/%d)' % (bars, perc, idx, tot)
 
 if tot > 0 and use_json:
     try:
@@ -336,9 +330,6 @@ if tot > 0 and use_json:
 def scrape_json():
     global todo_queue, done_queue
 
-    db_conn = sqlite3.connect(db_name)
-    db = db_conn.cursor()
-
     # Tripcode and email, but no name
     name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)</a>$'
     name1 = re.compile(name1, re.DOTALL)
@@ -352,7 +343,6 @@ def scrape_json():
     maybe_trip = re.compile(maybe_trip, re.DOTALL)
 
     htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">.*?</span></span></h3>'
-
 
     while not todo_queue.empty():
         try:
@@ -463,9 +453,6 @@ def scrape_json():
 def scrape_html():
     global todo_queue, done_queue
 
-    db_conn = sqlite3.connect(db_name)
-    db = db_conn.cursor()
-
     postregex = u"""\
 <h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">.*?</span></span></h3>
 <blockquote>
@@ -544,7 +531,7 @@ def scrape_html():
         done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
 
 
-# Spawn thread
+# Spawn threads
 
 threads = [threading.Thread(target=lambda: scrape_json() if use_json else scrape_html()) \
            for n in xrange(threads)]
@@ -552,6 +539,12 @@ map(lambda n: n.start(), threads)
 
 
 # Add scraped content to DB as we're going
+
+def show_progress(idx, tot):
+    perc = idx * 100.0 / tot
+    bars = "".join(map(lambda i: '#' if i <= perc else ' ', range(5, 101, 5)))
+
+    print '\033[1AScraping... [%s] %.2f%% (%d/%d)' % (bars, perc, idx, tot)
 
 idx = 0
 
@@ -578,6 +571,6 @@ while threading.activeCount() > 1 or not done_queue.empty():
     if progress_bar:
         show_progress(idx, tot)
     else:
-        print "Done thread %s." % thread[0]
+        print "[%d/%d] Done thread %s." % (idx, tot, thread[0])
 
 print "All done!"
