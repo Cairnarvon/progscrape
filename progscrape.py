@@ -79,7 +79,7 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\tthose (provided they're valid IDs and need updating)."
     print
     print "\t\033[1m--threads\033[0m"
-    print "\t\tHow many scraper threads to use. (default: \033[7m%d\033[0m)" % threads
+    print "\t\tHow many scraper threads to use. (default: %d)" % threads
     print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
@@ -273,7 +273,7 @@ for line in subjecttxt.read().splitlines(True):
         elif int(result[0]) < int(data[6]):
             i = db.execute('select max(id) from posts where thread = ?',
                            (data[3],)).fetchone()
-            to_update.append((data[3], data[6], i[0] + 1 if i else 1))
+            to_update.append((data[3], data[6], i[0] + 1 if i[0] else 1))
 
     except:
         # Failed to parse line; skip it
