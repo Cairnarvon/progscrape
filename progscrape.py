@@ -555,10 +555,15 @@ map(lambda n: n.start(), threads)
 
 idx = 0
 
-if progress_bar: print
+if progress_bar:
+    print
+    show_progress(idx, tot)
 
 while threading.activeCount() > 1 or not done_queue.empty():
-    thread, posts = done_queue.get()
+    try:
+       thread, posts = done_queue.get(timeout=2)
+    except:
+        continue
 
     db.execute(u'update threads set last_post = ? where thread = ?', thread)
 
