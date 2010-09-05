@@ -13,6 +13,7 @@ verify_trips = True
 no_aborn = False
 
 progress_bar = False
+threads = 1
 
 
 # Make sure we're using a compatible version
@@ -77,6 +78,9 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\tRead a list of thread IDs on standard input and only scrape"
     print "\t\tthose (provided they're valid IDs and need updating)."
     print
+    print "\t\033[1m--threads\033[0m"
+    print "\t\tHow many scraper threads to use. (default: \033[7m%d\033[0m)" % threads
+    print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
     print "\t\tdisplay this message and exit"
@@ -90,7 +94,7 @@ try:
                                                'progress-bar', 'no-progress-bar',
                                                'base-url=', 'port=', 'board=',
                                                'partial', 'aborn', 'no-aborn',
-                                               'charset=', 'help'])
+                                               'charset=', 'threads=', 'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
     sys.exit(1)
@@ -137,10 +141,18 @@ for (opt, arg) in optlist:
             print "Unknown encoding specified: \033[1m%s\033[0m" % arg
         else:
             charset = arg
+    elif opt == '--threads':
+        try:
+            threads = int(arg)
+        except ValueError:
+            print "Not a number: \033[1m%s\033[0m" % arg
 
 if len(args) > 0:
     db_name = args[0]
 
+
+if threads < 1:
+    threads = 1
 
 if len(base_url) > 0 and base_url[-1] == '/':
     base_url = base_url[:-1]
@@ -191,19 +203,20 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import httplib, re, gzip
+import httplib, gzip
 from StringIO import StringIO
 
 print "Fetching subject.txt...",
 sys.stdout.flush()
 
-def urlopen(url, con=[None]):
-    if con[0] is None:
-        con[0] = httplib.HTTPConnection(base_url, port)
+def urlopen(url):
+    con = httplib.HTTPConnection(base_url, port)
 
-    con[0].request('GET', url, headers={'User-Agent': 'progscrape/1.1',
+    con.request('GET', url, headers={'User-Agent': 'progscrape/1.1',
                                         'Accept-Encoding': 'gzip'})
-    resp = con[0].getresponse()
+    resp = con.getresponse()
+
+    con.close()
 
     if resp.getheader('Content-Encoding') == 'gzip':
         return gzip.GzipFile(fileobj=StringIO(resp.read()))
@@ -220,6 +233,8 @@ print "Got it."
 
 
 # Parse each line, check with DB, keep a list of all threads to be updated
+
+import re, Queue
 
 regex = re.compile(u"""
     ^(.*)       # Subject
@@ -253,10 +268,12 @@ for line in subjecttxt.read().splitlines(True):
         if result is None:
             db.execute('INSERT INTO threads VALUES (?, ?, ?)',
                        (data[3], data[0], 0))
-            to_update.append((data[3], data[6]))
+            to_update.append((data[3], data[6], 1))
 
         elif int(result[0]) < int(data[6]):
-            to_update.append((data[3], data[6]))
+            i = db.execute('select max(id) from posts where thread = ?',
+                           (data[3],)).fetchone()
+            to_update.append((data[3], data[6], i[0] + 1 if i else 1))
 
     except:
         # Failed to parse line; skip it
@@ -275,14 +292,20 @@ if partial:
             if thread not in to_scrape:
                 print " ", thread
 
+todo_queue, done_queue = Queue.Queue(), Queue.Queue()
+for t in to_update:
+    todo_queue.put(t)
+
 tot = len(to_update)
+if tot < threads:
+    threads = tot
 
 print "%d threads to update." % tot
 
 
 # Fetch new posts
 
-import time
+import time, threading
 
 def show_progress(idx, tot):
     perc = idx * 100.0 / tot
@@ -309,13 +332,12 @@ if tot > 0 and use_json:
         print "Can't access JSON interface! Using HTML interface."
         use_json = False
 
-idx = 1
 
-if progress_bar:
-    print
+def scrape_json():
+    global todo_queue, done_queue
 
-
-if use_json:    # JSON interface
+    db_conn = sqlite3.connect(db_name)
+    db = db_conn.cursor()
 
     # Tripcode and email, but no name
     name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)</a>$'
@@ -332,19 +354,14 @@ if use_json:    # JSON interface
     htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">.*?</span></span></h3>'
 
 
-    for thread in to_update:
-        if progress_bar:
-            show_progress(idx, tot)
-        else:
-            print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
-        idx += 1
-
-        l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',
-                       (thread[0],)).fetchone()
-        l = 1 if l[0] == None else (int(l[0]) + 1)
+    while not todo_queue.empty():
+        try:
+            thread, posts = todo_queue.get(timeout=2), []
+        except:
+            return
 
         try:
-            page = urlopen(json_url + thread[0] + '/%d-' % l).read()
+            page = urlopen(json_url + thread[0] + '/%d-' % thread[2]).read()
         except:
             print "Can't access %s! Exiting." % (json_url + thread[0])
             raise
@@ -433,20 +450,21 @@ if use_json:    # JSON interface
             if not no_aborn or p['name'] != u'SILENT!ABORN' or \
                                p['com'] != u'SILENT' or \
                                p['now'] != u'1234':
-                db.execute(u'insert or replace into posts \
-                             (thread, id, author, email, trip, time, body) \
-                             values (?, ?, ?, ?, ?, ?, ?)',
-                           map(lambda s: unicode(s, charset, "replace") if type(s) == str else s,
-                               (thread[0], post,
-                                p['name'], p['meiru'], p['trip'],
-                                p['now'], p['com'])))
 
-        db.execute(u'update threads set last_post = ? where thread = ?',
-                   (unicode(thread[1]), unicode(thread[0])))
-        db_conn.commit()
+                posts.append(map(lambda s: unicode(s, charset, "replace") \
+                                          if type(s) == str else s,
+                             (thread[0], post,
+                              p['name'], p['meiru'], p['trip'],
+                              p['now'], p['com'])))
+
+        done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
 
 
-else:           # HTML interface
+def scrape_html():
+    global todo_queue, done_queue
+
+    db_conn = sqlite3.connect(db_name)
+    db = db_conn.cursor()
 
     postregex = u"""\
 <h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">.*?</span></span></h3>
@@ -460,24 +478,19 @@ else:           # HTML interface
     meiruregex = u'<a href="mailto:(?P<meiru>.*?)">(?P<rest>[^<]*)</a>'
     meiruregex = re.compile(meiruregex)
 
-    for thread in to_update:
-        if progress_bar:
-            show_progress(idx, tot)
-        else:
-            print "[%d/%d] Updating thread %s..." % (idx, tot, thread[0])
-        idx += 1
-
-        l = db.execute('SELECT MAX(id) FROM posts WHERE thread = ?',
-                       (thread[0],)).fetchone()
-        l = 1 if l[0] == None else (int(l[0]) + 1)
+    while not todo_queue.empty():
+        try:
+            thread, posts = todo_queue.get(timeout=2), []
+        except:
+            return
 
         try:
-            page = urlopen(read_url + thread[0] + '/%d-' % l).read()
+            page = urlopen(read_url + thread[0] + '/%d-' % thread[2]).read()
         except:
             print "Can't access %s! Exiting." % (read_url + thread[0])
             raise
     
-        ids, authors, emails, trips, times, posts = [], [], [], [], [], []
+        ids, authors, emails, trips, times, bodies = [], [], [], [], [], []
 
         erred = False
 
@@ -514,10 +527,10 @@ else:           # HTML interface
             times.append(int(time.mktime(time.strptime(m.group('time'),
                                                        "%Y-%m-%d %H:%M"))))
 
-            posts.append(m.group('body'))
+            bodies.append(m.group('body'))
     
-        for post in zip(ids, authors, emails, trips, times, posts):
-            if int(post[0]) >= l:
+        for post in zip(ids, authors, emails, trips, times, bodies):
+            if int(post[0]) >= thread[2]:
                 b = [unicode(thread[0])]
                 
                 for y in post:
@@ -525,19 +538,41 @@ else:           # HTML interface
                         b.append(unicode(y, charset, 'replace'))
                     else:
                         b.append(y)
-                
-                db.execute(u'insert or replace into posts \
-                             (thread, id, author, email, trip, time, body) \
-                             values (?, ?, ?, ?, ?, ?, ?)', b)
-            
-        db.execute(u'UPDATE threads SET last_post = ? WHERE thread = ?',
-                   (unicode(thread[1]), unicode(thread[0])))
-        db_conn.commit()
+
+                posts.append(b)
+        
+        done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
 
 
-try:
-    urlopen.func_defaults[0][0].close()
-except:
-    pass
+# Spawn thread
+
+threads = [threading.Thread(target=lambda: scrape_json() if use_json else scrape_html()) \
+           for n in xrange(threads)]
+map(lambda n: n.start(), threads)
+
+
+# Add scraped content to DB as we're going
+
+idx = 0
+
+if progress_bar: print
+
+while threading.activeCount() > 1 or not done_queue.empty():
+    thread, posts = done_queue.get()
+
+    db.execute(u'update threads set last_post = ? where thread = ?', thread)
+
+    for post in posts:
+        db.execute(u'insert or replace into posts \
+                     (thread, id, author, email, trip, time, body) \
+                     values (?, ?, ?, ?, ?, ?, ?)', post)
+
+    db_conn.commit()
+
+    idx += 1
+    if progress_bar:
+        show_progress(idx, tot)
+    else:
+        print "Done thread %s." % thread[0]
 
 print "All done!"
