@@ -533,8 +533,8 @@ def scrape_html():
 
 # Spawn threads
 
-threads = [threading.Thread(target=lambda: scrape_json() if use_json else scrape_html()) \
-           for n in xrange(threads)]
+threads = [threading.Thread(target=scrape_json if use_json else scrape_html) \
+           for _ in xrange(threads)]
 map(lambda n: n.start(), threads)
 
 
