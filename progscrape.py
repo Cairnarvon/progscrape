@@ -209,14 +209,15 @@ from StringIO import StringIO
 print "Fetching subject.txt...",
 sys.stdout.flush()
 
-def urlopen(url):
-    con = httplib.HTTPConnection(base_url, port)
+def urlopen(url, connection=None):
+    con = connection if connection else httplib.HTTPConnection(base_url, port)
 
     con.request('GET', url, headers={'User-Agent': 'progscrape/1.2',
                                      'Accept-Encoding': 'gzip'})
     resp = con.getresponse()
 
-    con.close()
+    if not connection:
+        con.close()
 
     if resp.getheader('Content-Encoding') == 'gzip':
         return gzip.GzipFile(fileobj=StringIO(resp.read()))
@@ -330,6 +331,8 @@ if tot > 0 and use_json:
 def scrape_json():
     global todo_queue, done_queue
 
+    con = httplib.HTTPConnection(base_url, port)
+
     # Tripcode and email, but no name
     name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)</a>$'
     name1 = re.compile(name1, re.DOTALL)
@@ -348,10 +351,10 @@ def scrape_json():
         try:
             thread, posts = todo_queue.get(timeout=2), []
         except:
-            return
+            continue
 
         try:
-            page = urlopen(json_url + thread[0] + '/%d-' % thread[2]).read()
+            page = urlopen(json_url + thread[0] + '/%d-' % thread[2], con).read()
         except:
             print "Can't access %s! Exiting." % (json_url + thread[0])
             raise
@@ -410,7 +413,7 @@ def scrape_json():
             if len(tripv) < 200:
                 tripv_url += ','.join(tripv)
             try:
-                hp = urlopen(tripv_url)
+                hp = urlopen(tripv_url, con)
 
             except:
                 print "Couldn't access HTML interface to verify tripcodes.",\
@@ -449,9 +452,13 @@ def scrape_json():
 
         done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
 
+    con.close()
+
 
 def scrape_html():
     global todo_queue, done_queue
+
+    con = httplib.HTTPConnection(base_url, port)
 
     postregex = u"""\
 <h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">.*?</span></span></h3>
@@ -469,10 +476,10 @@ def scrape_html():
         try:
             thread, posts = todo_queue.get(timeout=2), []
         except:
-            return
+            continue
 
         try:
-            page = urlopen(read_url + thread[0] + '/%d-' % thread[2]).read()
+            page = urlopen(read_url + thread[0] + '/%d-' % thread[2], con).read()
         except:
             print "Can't access %s! Exiting." % (read_url + thread[0])
             raise
@@ -530,12 +537,13 @@ def scrape_html():
         
         done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
 
+    con.close()
+
 
 # Spawn threads
 
-threads = [threading.Thread(target=scrape_json if use_json else scrape_html) \
-           for _ in xrange(threads)]
-map(lambda n: n.start(), threads)
+for _ in xrange(threads):
+    threading.Thread(target=scrape_json if use_json else scrape_html).start()
 
 
 # Add scraped content to DB as we're going
