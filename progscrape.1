@@ -51,7 +51,7 @@ Specify the character encoding the board uses. (default: \fButf-8\fR)
 Read a list of thread IDs on standard input and only scrape those (provided they're valid IDs and need updating).
 .TP
 \fB\-\-threads\fR=\fITHREADS\fR
-How many scraper threads to use. (default \fB1\fR)
+How many scraper threads to use. If this is set to \fBauto\fR, progscrape will try to determine a sensible number based on the number of threads it has to scrape. (default \fBauto\fR)
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help message and exit.

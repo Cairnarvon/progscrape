@@ -13,7 +13,7 @@ verify_trips = True
 no_aborn = False
 
 progress_bar = False
-threads = 1
+threads = -1
 
 
 # Make sure we're using a compatible version
@@ -79,7 +79,7 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\tthose (provided they're valid IDs and need updating)."
     print
     print "\t\033[1m--threads\033[0m"
-    print "\t\tHow many scraper threads to use. (default: %d)" % threads
+    print "\t\tHow many scraper threads to use. (default: %s)" % ('auto' if threads == -1 else str(threads))
     print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
@@ -142,17 +142,19 @@ for (opt, arg) in optlist:
         else:
             charset = arg
     elif opt == '--threads':
-        try:
-            threads = int(arg)
-        except ValueError:
-            print "Not a number: \033[1m%s\033[0m" % arg
+        if arg == 'auto':
+            threads = -1
+        else:
+            try:
+                threads = int(arg)
+                if threads < 1:
+                    threads = 1
+            except ValueError:
+                print "Not a number: \033[1m%s\033[0m" % arg
 
 if len(args) > 0:
     db_name = args[0]
 
-
-if threads < 1:
-    threads = 1
 
 if len(base_url) > 0 and base_url[-1] == '/':
     base_url = base_url[:-1]
@@ -302,6 +304,9 @@ if tot < threads:
     threads = tot
 
 print "%d threads to update." % tot
+
+if threads < 1:
+    threads = min(tot, 1000) * 31 / 1000 + 1
 
 
 # Fetch new posts

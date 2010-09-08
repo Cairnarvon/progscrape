@@ -21,6 +21,10 @@ __progscrape()
                 /anime/ /carcom/ /games/' -- $cur ) )
             return 0
             ;;
+        --threads)
+            COMPREPLY='auto'
+            return 0
+            ;;
     esac
 
     if [[ "$cur" == -* ]]; then
