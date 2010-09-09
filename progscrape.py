@@ -561,7 +561,7 @@ def show_progress(idx, tot):
 
 idx = 0
 
-if progress_bar:
+if tot > 0 and progress_bar:
     print
     show_progress(idx, tot)
 
