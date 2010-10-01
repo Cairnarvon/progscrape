@@ -15,6 +15,8 @@ no_aborn = False
 progress_bar = False
 threads = -1
 
+dry_run = False
+
 
 # Make sure we're using a compatible version
 
@@ -81,6 +83,11 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\033[1m--threads\033[0m"
     print "\t\tHow many scraper threads to use. (default: %s)" % ('auto' if threads == -1 else str(threads))
     print
+    print "\t\033[1m--dry-run\033[0m"
+    print "\t\033[1m--no-dry-run\033[0m"
+    print "\t\tJust figure out how many threads would have to be retrieved,"
+    print "\t\tdon't actually retrieve them. (default: %s)" % ("no", "yes")[dry_run]
+    print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
     print "\t\tdisplay this message and exit"
@@ -94,6 +101,7 @@ try:
                                                'progress-bar', 'no-progress-bar',
                                                'base-url=', 'port=', 'board=',
                                                'partial', 'aborn', 'no-aborn',
+                                               'dry-run', 'no-dry-run',
                                                'charset=', 'threads=', 'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
@@ -151,6 +159,10 @@ for (opt, arg) in optlist:
                     threads = 1
             except ValueError:
                 print "Not a number: \033[1m%s\033[0m" % arg
+    elif opt == '--dry-run':
+        dry_run = True
+    elif opt == '--no-dry-run':
+        dry_run = False
 
 if len(args) > 0:
     db_name = args[0]
@@ -254,7 +266,7 @@ regex = re.compile(u"""
     <>
     (\d*)       # Time of last post
     \\n$""", re.VERBOSE)
-to_update = []
+to_update, tot_posts = [], 0
 
 for line in subjecttxt.read().splitlines(True):
     line = unicode(line, "latin-1")
@@ -272,11 +284,14 @@ for line in subjecttxt.read().splitlines(True):
             db.execute('INSERT INTO threads VALUES (?, ?, ?)',
                        (data[3], data[0], 0))
             to_update.append((data[3], data[6], 1))
+            tot_posts += int(data[4])
 
         elif int(result[0]) < int(data[6]):
             i = db.execute('select max(id) from posts where thread = ?',
                            (data[3],)).fetchone()
-            to_update.append((data[3], data[6], i[0] + 1 if i[0] else 1))
+            i = i[0] if i[0] else 0
+            to_update.append((data[3], data[6], i + 1))
+            tot_posts += int(data[4]) - i
 
     except:
         # Failed to parse line; skip it
@@ -303,7 +318,11 @@ tot = len(to_update)
 if tot < threads:
     threads = tot
 
-print "%d threads to update." % tot
+print "%d threads to update (approx. %d posts)." % (tot, tot_posts)
+
+if dry_run:
+    print "Dry run; exiting."
+    sys.exit(0)
 
 if threads < 1:
     threads = min(tot, 1000) * 31 / 1000 + 1

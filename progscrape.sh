@@ -34,6 +34,7 @@ __progscrape()
             --verify-trips --no-verify-trips \
             --base-url --port --board --charset \
             --aborn --no-aborn --partial --threads \
+            --dry-run --no-dry-run \
             --help -h' -- $cur ) )
     elif [ ! -z $(type -t _filedir) ]; then
         _filedir db

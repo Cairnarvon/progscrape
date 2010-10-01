@@ -1,4 +1,4 @@
-.TH progscrape 1 "July 2010"
+.TH progscrape 1 "September 2010"
 .SH NAME
 progscrape \- \fBXarn\fR's Shiichan webscraper
 .SH SYNOPSIS
@@ -52,6 +52,12 @@ Read a list of thread IDs on standard input and only scrape those (provided they
 .TP
 \fB\-\-threads\fR=\fITHREADS\fR
 How many scraper threads to use. If this is set to \fBauto\fR, progscrape will try to determine a sensible number based on the number of threads it has to scrape. (default \fBauto\fR)
+.TP
+\fB\-\-dry\-run\fR
+Calculate how many threads and posts would need to be fetched to bring the database up to date, but don't actually fetch the posts.
+.TP
+\fB\-\-no\-dry\-run\fR
+Turn off dry run mode. (default)
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help message and exit.
