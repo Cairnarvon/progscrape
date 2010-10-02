@@ -315,8 +315,6 @@ for t in to_update:
     todo_queue.put(t)
 
 tot = len(to_update)
-if tot < threads:
-    threads = tot
 
 print "%d threads to update (approx. %d posts)." % (tot, tot_posts)
 
@@ -326,6 +324,9 @@ if dry_run:
 
 if threads < 1:
     threads = min(tot, 1000) * 31 / 1000 + 1
+
+if tot < threads:
+    threads = tot
 
 
 # Fetch new posts
