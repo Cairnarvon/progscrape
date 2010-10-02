@@ -252,81 +252,79 @@ print "Got it."
 import re, Queue
 
 regex = re.compile(u"""
-    ^(.*)       # Subject
+    ^(?P<subject>.*)    # Subject
     <>
-    (.*?)       # Name
+    .*?                 # Creator's name
     <>
-    (.*?)       # E-mail
+    .*?                 # Thread icon
     <>
-    (-?\d*)     # Time posted/thread ID
+    (?P<id>-?\d*)       # Time posted/thread ID
     <>
-    (\d*)       # Number of replies
+    (?P<replies>\d*)    # Number of replies
     <>
-    (.*?)       # ???
+    .*?                 # ???
     <>
-    (\d*)       # Time of last post
+    (?P<last_post>\d*)  # Time of last post
     \\n$""", re.VERBOSE)
+
 to_update, tot_posts = [], 0
+partial_threads = "".join(sys.stdin.readlines()).split() if partial else None
+todo_queue, done_queue = Queue.Queue(), Queue.Queue()
 
 for line in subjecttxt.read().splitlines(True):
     line = unicode(line, "latin-1")
 
     try:
-        parsed = regex.match(line)
+        thread = regex.match(line).groupdict()
+        thread = dict((a, thread[a].encode('latin-1').decode(charset, 'replace'))
+                      for a in thread)
 
-        data = map(lambda s: s.encode('latin-1').decode(charset, 'replace'),
-                   parsed.groups())
+        if partial and thread['id'] not in partial_threads:
+            continue
 
-        result = db.execute('SELECT last_post FROM threads WHERE thread = ?',
-                            (data[3],)).fetchone()
+        last_post = db.execute('select last_post from threads where thread = ?',
+                               (thread['id'],)).fetchone()
 
-        if result is None:
-            db.execute('INSERT INTO threads VALUES (?, ?, ?)',
-                       (data[3], data[0], 0))
-            to_update.append((data[3], data[6], 1))
-            tot_posts += int(data[4])
+        if last_post is None:
+            # Wholly new thread
+            db.execute('insert into threads values (?, ?, ?)',
+                       (thread['id'], thread['subject'], 0))
+            last_post = 0
 
-        elif int(result[0]) < int(data[6]):
-            i = db.execute('select max(id) from posts where thread = ?',
-                           (data[3],)).fetchone()
-            i = i[0] if i[0] else 0
-            to_update.append((data[3], data[6], i + 1))
-            tot_posts += int(data[4]) - i
+        elif int(last_post[0]) < int(thread['last_post']):
+            # We already have part of this thread
+            last_post = db.execute('select max(id) from posts where thread = ?',
+                                   (thread['id'],)).fetchone()
+            last_post = last_post[0] if last_post else 0
+
+        else:
+            # Thread is up to date
+            continue
+
+        to_update.append(thread['id'])
+        todo_queue.put((thread['id'], thread['last_post'], last_post + 1))
+        tot_posts += int(thread['replies']) - last_post
 
     except:
         # Failed to parse line; skip it
-        print "subject.txt fail:", line
+        print "! subject.txt fail:", line.rstrip()
 
-if partial:
-    threads = "".join(sys.stdin.readlines()).split()
-    to_update = filter(lambda (thread, x, y): thread in threads, to_update)
-
-    if len(to_update) != len(threads):
-        print "Some of the threads you listed either don't need updating or",\
-              "don't exist:"
+if partial and len(to_update) != len(partial_threads):
+    print "Some of the threads you listed either don't need updating or",\
+          "don't exist:"
         
-        to_scrape = [thread for (thread, x, y) in to_update]
-        for thread in threads:
-            if thread not in to_scrape:
-                print " ", thread
-
-todo_queue, done_queue = Queue.Queue(), Queue.Queue()
-for t in to_update:
-    todo_queue.put(t)
+    for thread in partial_threads:
+        if thread not in to_update:
+            print " ", thread
 
 tot = len(to_update)
 
-print "%d threads to update (approx. %d posts)." % (tot, tot_posts)
+print "%d thread%s to update (approx. %d post%s)." % \
+      (tot, '' if tot == 1 else 's', tot_posts, '' if tot_posts == 1 else 's')
 
 if dry_run:
     print "Dry run; exiting."
     sys.exit(0)
-
-if threads < 1:
-    threads = min(tot, 1000) * 31 / 1000 + 1
-
-if tot < threads:
-    threads = tot
 
 
 # Fetch new posts
@@ -566,6 +564,12 @@ def scrape_html():
 
 
 # Spawn threads
+
+if threads < 1:
+    threads = min(tot, 1000) * 31 / 1000 + 1
+
+if tot < threads:
+    threads = tot
 
 for _ in xrange(threads):
     threading.Thread(target=scrape_json if use_json else scrape_html).start()
