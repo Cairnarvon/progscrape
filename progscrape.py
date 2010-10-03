@@ -357,15 +357,15 @@ def scrape_json():
     con = httplib.HTTPConnection(base_url, port)
 
     # Tripcode and email, but no name
-    name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z0-9./]{10}(?:![a-zA-Z0-9+/]{15})?)</a>$'
+    name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z0-9./]{10}|!(?:[a-zA-Z0-9./]{10})?![a-zA-Z0-9+/]{15})</a>$'
     name1 = re.compile(name1, re.DOTALL)
 
     # Email and name, optional tripcode
-    name2 = u'^<a href="mailto:(?P<meiru>[^"]*)">(?P<name>[^<]*)</a>(?P<trip>![a-zA-Z0-9./]{10}(?:![a-zA-Z0-9+/]{15})?)?$'
+    name2 = u'^<a href="mailto:(?P<meiru>[^"]*)">(?P<name>.*?)</a>(?P<trip>![a-zA-Z0-9./]{10}|!(?:[a-zA-Z0-9./]{10})?![a-zA-Z0-9+/]{15})?$'
     name2 = re.compile(name2, re.DOTALL)
 
     # Ambiguous tripcode
-    maybe_trip = u'^.*?!(?:[a-zA-Z0-9./]{10}(?:![a-zA-Z0-9+/]{15})?|[a-zA-Z0-9+/]{15})$'
+    maybe_trip = u'^.*?!(?:[a-zA-Z0-9./]{10}|(?:[a-zA-Z0-9./]{10})?![a-zA-Z0-9+/]{15})$'
     maybe_trip = re.compile(maybe_trip, re.DOTALL)
 
     htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">.*?</span></span></h3>'
@@ -608,6 +608,6 @@ while threading.activeCount() > 1 or not done_queue.empty():
     if progress_bar:
         show_progress(idx, tot)
     else:
-        print "[%d/%d] Done thread %s." % (idx, tot, thread[0])
+        print "[%d/%d] Done thread %s." % (idx, tot, thread[1])
 
 print "All done!"
