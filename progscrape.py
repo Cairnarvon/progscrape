@@ -357,11 +357,11 @@ def scrape_json():
     con = httplib.HTTPConnection(base_url, port)
 
     # Tripcode and email, but no name
-    name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)</a>$'
+    name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z0-9./]{10}(?:![a-zA-Z0-9+/]{15})?)</a>$'
     name1 = re.compile(name1, re.DOTALL)
 
     # Email and name, optional tripcode
-    name2 = u'^<a href="mailto:(?P<meiru>[^"]*)">(?P<name>[^<]*)</a>(?P<trip>![a-zA-Z./]{10}(?:![a-zA-Z+/]{15})?)?$'
+    name2 = u'^<a href="mailto:(?P<meiru>[^"]*)">(?P<name>[^<]*)</a>(?P<trip>![a-zA-Z0-9./]{10}(?:![a-zA-Z0-9+/]{15})?)?$'
     name2 = re.compile(name2, re.DOTALL)
 
     # Ambiguous tripcode
