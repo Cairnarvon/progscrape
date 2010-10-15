@@ -233,6 +233,10 @@ def urlopen(url, connection=None):
     if not connection:
         con.close()
 
+    if resp.status != 200:
+        print "! Error: %d %s" % (resp.status, resp.reason)
+        sys.exit(resp.status)
+
     if resp.getheader('Content-Encoding') == 'gzip':
         return gzip.GzipFile(fileobj=StringIO(resp.read()))
     else:
