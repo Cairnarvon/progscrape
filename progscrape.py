@@ -336,6 +336,18 @@ if dry_run:
 
 import time, threading
 
+errors = 0
+
+def error(message):
+    global errors
+
+    errors += 1
+
+    print "! Error:", message
+    if progress_bar:
+        print
+
+
 if tot > 0 and use_json:
     try:
         import json
@@ -383,16 +395,19 @@ def scrape_json():
 
         try:
             page = urlopen(json_url + thread[0] + '/%d-' % thread[2], con)
+        except httplib.BadStatusLine:
+            con.close()
+            con = httplib.HTTPConnection(base_url, port)
+            error("Server fucked up returning %s, thread skipped." % thread[0])
+            continue
         except:
-            print "Can't access %s! Exiting." % (json_url + thread[0])
-            raise
+            error("Can't access %s, thread skipped." % (json_url + thread[0]))
+            continue
 
         try:
             page = json.loads(page)
         except ValueError:
-            print "! Error: can't parse JSON, thread %s skipped." % thread[0]
-            if progress_bar:
-                print
+            error("Can't parse JSON, thread %s skipped." % thread[0])
             continue
 
 
@@ -444,9 +459,11 @@ def scrape_json():
                 hp = urlopen(tripv_url, con)
 
             except:
-                print "Couldn't access HTML interface to verify tripcodes.",\
-                      "Exiting."
-                raise
+                con.close()
+                con = httplib.HTTPConnection(base_url, port)
+                error("Couldn't access HTML interface to verify tripcodes. " +
+                      "Skipping %s." % thread[0])
+                continue
 
 
         # Verify trips if needed, insert data
@@ -459,8 +476,8 @@ def scrape_json():
                 m = htripper.search(hp)
 
                 if m is None:
-                    print "Malformed post header! Exiting."
-                    print read_url + thread[0] + '/' + post
+                    error("Malformed post header for %s! Exiting." %
+                          (read_url + thread[0] + '/' + post))
                     sys.exit(1)
 
                 else:
@@ -507,8 +524,10 @@ def scrape_html():
         try:
             page = urlopen(read_url + thread[0] + '/%d-' % thread[2], con)
         except:
-            print "Can't access %s! Exiting." % (read_url + thread[0])
-            raise
+            con.close()
+            con = httplib.HTTPConnection(base_url, port)
+            error("Can't access %s, skipping thread." % (read_url + thread[0]))
+            continue
     
         ids, authors, emails, trips, times, bodies = [], [], [], [], [], []
 
@@ -518,7 +537,7 @@ def scrape_html():
             m = postregex.search(p)
             if m is None:
                 if erred:
-                    print "! Broken post in thread %s" % thread[0]
+                    error("Broken post in thread %s" % thread[0])
                 erred = True
                 continue
 
@@ -613,4 +632,8 @@ while threading.activeCount() > 1 or not done_queue.empty():
     else:
         print "[%d/%d] Done thread %s." % (idx, tot, thread[1])
 
-print "All done!"
+print "All done! Finished with %d error%s." % (errors, "" if errors == 1 else "s")
+
+if errors > 0:
+    print "It's possible that running /prog/scrape again will retrieve posts "\
+          "that couldn't\nbe retrieved just now."
