@@ -229,6 +229,7 @@ def urlopen(url, connection=None):
     con.request('GET', url, headers={'User-Agent': 'progscrape/1.2',
                                      'Accept-Encoding': 'gzip'})
     resp = con.getresponse()
+    body = resp.read()
 
     if not connection:
         con.close()
@@ -238,9 +239,9 @@ def urlopen(url, connection=None):
         sys.exit(resp.status)
 
     if resp.getheader('Content-Encoding') == 'gzip':
-        return gzip.GzipFile(fileobj=StringIO(resp.read()))
+        return gzip.GzipFile(fileobj=StringIO(body)).read()
     else:
-        return resp
+        return body
 
 try:
     subjecttxt = urlopen(prog_url + 'subject.txt')
@@ -275,7 +276,7 @@ to_update, tot_posts = [], 0
 partial_threads = "".join(sys.stdin.readlines()).split() if partial else None
 todo_queue, done_queue = Queue.Queue(), Queue.Queue()
 
-for line in subjecttxt.read().splitlines(True):
+for line in subjecttxt.splitlines(True):
     line = unicode(line, "latin-1")
 
     try:
@@ -299,7 +300,7 @@ for line in subjecttxt.read().splitlines(True):
             # We already have part of this thread
             last_post = db.execute('select max(id) from posts where thread = ?',
                                    (thread['id'],)).fetchone()
-            last_post = last_post[0] if last_post else 0
+            last_post = last_post[0] or 0
 
         else:
             # Thread is up to date
@@ -381,7 +382,7 @@ def scrape_json():
             continue
 
         try:
-            page = urlopen(json_url + thread[0] + '/%d-' % thread[2], con).read()
+            page = urlopen(json_url + thread[0] + '/%d-' % thread[2], con)
         except:
             print "Can't access %s! Exiting." % (json_url + thread[0])
             raise
@@ -447,8 +448,6 @@ def scrape_json():
                       "Exiting."
                 raise
 
-            hp = hp.read()
-
 
         # Verify trips if needed, insert data
 
@@ -506,7 +505,7 @@ def scrape_html():
             continue
 
         try:
-            page = urlopen(read_url + thread[0] + '/%d-' % thread[2], con).read()
+            page = urlopen(read_url + thread[0] + '/%d-' % thread[2], con)
         except:
             print "Can't access %s! Exiting." % (read_url + thread[0])
             raise
