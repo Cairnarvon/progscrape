@@ -2,7 +2,7 @@
 
 # ``Constants''
 
-db_name  = 'prog.db'
+db_name  = None
 base_url = 'dis.4chan.org'
 port     = 80
 board    = '/prog/'
@@ -12,7 +12,7 @@ use_json = True
 verify_trips = True
 no_aborn = False
 
-progress_bar = False
+progress_bar = True
 threads = -1
 
 dry_run = False
@@ -164,18 +164,19 @@ for (opt, arg) in optlist:
     elif opt == '--no-dry-run':
         dry_run = False
 
-if len(args) > 0:
-    db_name = args[0]
-
-
-if len(base_url) > 0 and base_url[-1] == '/':
-    base_url = base_url[:-1]
-
 if len(board) > 0:
     if board[-1] != '/':
         board += '/'
     if board[0] != '/':
         board = '/' + board
+
+if len(args) > 0:
+    db_name = args[0]
+elif not db_name:
+    db_name = board[1:-1] + ".db"
+
+if len(base_url) > 0 and base_url[-1] == '/':
+    base_url = base_url[:-1]
 
 prog_url = board
 read_url = "/read" + board
