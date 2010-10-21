@@ -38,7 +38,7 @@ If this isn't what you want to do, you can pass it arguments to modify its behav
 
 ### Using the scraped content
 
-When /prog/scrape done scraping, the content will be in the aforementioned database. Open it with `sqlite3 prog.db` (or equivalent) and use `.schema` to see its schema. If you don't know any SQL, tutorials can be found all over the Internet and classes are offered at most institutes of higher education.
+When /prog/scrape is done scraping, the content will be in the aforementioned database. Open it with `sqlite3 prog.db` (or equivalent) and use `.schema` to see its schema. If you don't know any SQL, tutorials can be found all over the Internet and classes are offered at most institutes of higher education.
 
 ### Updating an existing database
 
