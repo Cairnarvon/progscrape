@@ -218,31 +218,23 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import httplib, gzip
+import urllib2, gzip
 from StringIO import StringIO
 
 print "Fetching subject.txt...",
 sys.stdout.flush()
 
-def urlopen(url, connection=None):
-    con = connection if connection else httplib.HTTPConnection(base_url, port)
+def urlopen(url):
+    req = urllib2.Request("http://" + base_url + url)
+    req.add_header('User-Agent', 'progscrape/1.3')
+    req.add_header('Accept-Encoding', 'gzip')
 
-    con.request('GET', url, headers={'User-Agent': 'progscrape/1.2',
-                                     'Accept-Encoding': 'gzip'})
-    resp = con.getresponse()
-    body = resp.read()
+    req = urllib2.build_opener().open(req)
 
-    if not connection:
-        con.close()
-
-    if resp.status != 200:
-        print "! Error: %d %s" % (resp.status, resp.reason)
-        sys.exit(resp.status)
-
-    if resp.getheader('Content-Encoding') == 'gzip':
-        return gzip.GzipFile(fileobj=StringIO(body)).read()
+    if req.headers.get('Content-Encoding') == 'gzip':
+        return gzip.GzipFile(fileobj=StringIO(req.read())).read()
     else:
-        return body
+        return req.read()
 
 try:
     subjecttxt = urlopen(prog_url + 'subject.txt')
@@ -372,8 +364,6 @@ if tot > 0 and use_json:
 def scrape_json():
     global todo_queue, done_queue
 
-    con = httplib.HTTPConnection(base_url, port)
-
     # Tripcode and email, but no name
     name1 = u'^!<a href="mailto:(?P<meiru>[^"]*)">(?P<trip>![a-zA-Z0-9./]{10}|!(?:[a-zA-Z0-9./]{10})?![a-zA-Z0-9+/]{15})</a>$'
     name1 = re.compile(name1, re.DOTALL)
@@ -395,12 +385,7 @@ def scrape_json():
             continue
 
         try:
-            page = urlopen(json_url + thread[0] + '/%d-' % thread[2], con)
-        except httplib.BadStatusLine:
-            con.close()
-            con = httplib.HTTPConnection(base_url, port)
-            error("Server fucked up returning %s, thread skipped." % thread[0])
-            continue
+            page = urlopen(json_url + thread[0] + '/%d-' % thread[2])
         except:
             error("Can't access %s, thread skipped." % (json_url + thread[0]))
             continue
@@ -457,11 +442,9 @@ def scrape_json():
             if len(tripv) < 200:
                 tripv_url += ','.join(tripv)
             try:
-                hp = urlopen(tripv_url, con)
+                hp = urlopen(tripv_url)
 
             except:
-                con.close()
-                con = httplib.HTTPConnection(base_url, port)
                 error("Couldn't access HTML interface to verify tripcodes. " +
                       "Skipping %s." % thread[0])
                 continue
@@ -496,13 +479,9 @@ def scrape_json():
 
         done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
 
-    con.close()
-
 
 def scrape_html():
     global todo_queue, done_queue
-
-    con = httplib.HTTPConnection(base_url, port)
 
     postregex = u"""\
 <h3><span class="postnum"><a href='javascript:quote\((?P<id>\d+),"post1"\);'>(?P=id)</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">(?P<time>.*?)</span> <span class="id">.*?</span></span></h3>
@@ -523,10 +502,8 @@ def scrape_html():
             continue
 
         try:
-            page = urlopen(read_url + thread[0] + '/%d-' % thread[2], con)
+            page = urlopen(read_url + thread[0] + '/%d-' % thread[2])
         except:
-            con.close()
-            con = httplib.HTTPConnection(base_url, port)
             error("Can't access %s, skipping thread." % (read_url + thread[0]))
             continue
     
@@ -582,8 +559,6 @@ def scrape_html():
                 posts.append(b)
         
         done_queue.put(((unicode(thread[1]), unicode(thread[0])), posts))
-
-    con.close()
 
 
 # Spawn threads
