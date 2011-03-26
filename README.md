@@ -62,6 +62,10 @@ When using the JSON interface, you may notice a lot of posts posted by SILENT!AB
 
 This script looks at `subject.txt` and counts how many posts there should be. If you suspect your database is screwy, run it and compare that to the number of posts you have. Note that `subject.txt`'s tally includes deleted posts, so the script is fairly pointless if you aren't using the JSON interface. It takes optional `--base-url` and `--board` arguments, same as /prog/scrape.
 
+#### `progread.py`
+
+This script displays posts from your scraped database in plain text, if you enjoy that sort of thing. Run it without arguments to see the syntax.
+
 
 ## Bugs and feature requests
 
