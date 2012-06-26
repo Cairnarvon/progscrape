@@ -218,23 +218,16 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import urllib2, gzip
+import requests, gzip
 from StringIO import StringIO
+
+session = requests.session()
 
 print "Fetching subject.txt...",
 sys.stdout.flush()
 
 def urlopen(url):
-    req = urllib2.Request("http://" + base_url + url)
-    req.add_header('User-Agent', 'progscrape/1.3')
-    req.add_header('Accept-Encoding', 'gzip')
-
-    req = urllib2.build_opener().open(req)
-
-    if req.headers.get('Content-Encoding') == 'gzip':
-        return gzip.GzipFile(fileobj=StringIO(req.read())).read()
-    else:
-        return req.read()
+    return session.get("http://" + base_url + url, headers = {'User-Agent' : 'progscrape/1.3'}).content
 
 try:
     subjecttxt = urlopen(prog_url + 'subject.txt')
