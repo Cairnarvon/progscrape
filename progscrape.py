@@ -218,9 +218,10 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import requests, gzip
+import requests, gzip, gc
 from StringIO import StringIO
 
+gc.set_threshold(20, 4, 2)
 session = requests.session()
 
 print "Fetching subject.txt...",
