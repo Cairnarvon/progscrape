@@ -1,5 +1,28 @@
 #!/usr/bin/python
 
+import gc
+import gzip
+import sqlite3
+import sys
+import re
+import threading
+import time
+import Queue
+from getopt import getopt
+from StringIO import StringIO
+
+try:
+    import json
+except ImportError:
+    try:
+        import simplejson as json
+    except ImportError:
+        print "Couldn't load simplejson! Using HTML interface."
+        use_json = False
+
+import requests
+
+
 # ``Constants''
 
 db_name  = None
@@ -18,12 +41,7 @@ threads = -1
 dry_run = False
 
 
-import sys
-
-
 # Parse command line arguments
-
-from getopt import getopt
 
 if '--help' in sys.argv or '-h' in sys.argv:
     print "\033[1mUSAGE\033[0m"
@@ -178,8 +196,6 @@ json_url = "/json" + board
 
 # Set up the database connection first
 
-import sqlite3
-
 db_conn = sqlite3.connect(db_name)
 db = db_conn.cursor()
 
@@ -211,9 +227,6 @@ except sqlite3.DatabaseError:
 
 # Try to fetch subject.txt
 
-import requests, gzip, gc
-from StringIO import StringIO
-
 gc.set_threshold(20, 4, 2)
 session = requests.session()
 
@@ -233,8 +246,6 @@ print "Got it."
 
 
 # Parse each line, check with DB, keep a list of all threads to be updated
-
-import re, Queue
 
 regex = re.compile(u"""
     ^(?P<subject>.*)    # Subject
@@ -314,8 +325,6 @@ if dry_run:
 
 # Fetch new posts
 
-import time, threading
-
 errors = 0
 
 def error(message):
@@ -330,19 +339,7 @@ def error(message):
 
 if tot > 0 and use_json:
     try:
-        import json
-
-    except ImportError:
-        try:
-            import simplejson as json
-
-        except ImportError:
-            print "Couldn't load simplejson! Using HTML interface."
-            use_json = False
-
-    try:
         json_test = urlopen(json_url + to_update[0][0])
-
     except:
         print "Can't access JSON interface! Using HTML interface."
         use_json = False
