@@ -10,7 +10,9 @@
 
 ## System requirements
 
-/prog/scrape requires Python 2.5 (recommended) or newer (but not Python 3.x) to run. If you're using Python 2.5, you will need to install the [`simplejson` module](http://pypi.python.org/pypi/simplejson/), if you haven't already. This is unnecessary for Python 2.6 or newer.
+/prog/scrape requires Python 2.5 or newer (but not Python 3.x) to run. If you're using Python 2.5, you will need to install the [`simplejson` module](http://pypi.python.org/pypi/simplejson/), if you haven't already. This is unnecessary for Python 2.6 or newer.
+
+You will also need the [`requests`](http://pypi.python.org/pypi/requests/) library.
 
 The optional progress bar requires a terminal which supports ANSI escape sequences. This includes most recent terminals and terminal emulators (post-1970s), but may not be supported on Windows.
 
