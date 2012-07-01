@@ -18,14 +18,7 @@ threads = -1
 dry_run = False
 
 
-# Make sure we're using a compatible version
-
 import sys
-
-if sys.version_info[0] != 2 or sys.version_info[1] < 5:
-    print "Your version of Python is not supported at this time.",\
-          "Please use Python 2.x, where x > 4."
-    sys.exit(1)
 
 
 # Parse command line arguments
