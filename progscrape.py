@@ -228,7 +228,7 @@ print "Fetching subject.txt...",
 sys.stdout.flush()
 
 def urlopen(url):
-    return session.get("http://" + base_url + url, headers = {'User-Agent' : 'progscrape/1.3'}).content
+    return session.get("http://" + base_url + url, headers = {'User-Agent' : 'progscrape/1.4'}).content
 
 try:
     subjecttxt = urlopen(prog_url + 'subject.txt')
