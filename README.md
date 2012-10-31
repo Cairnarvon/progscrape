@@ -68,6 +68,13 @@ This script looks at `subject.txt` and counts how many posts there should be. If
 
 This script displays posts from your scraped database in plain text, if you enjoy that sort of thing. Run it without arguments to see the syntax.
 
+#### `progsearch.py`
+
+This script builds an index based a /prog/scrape database and lets you run search engine-style queries on it. It's nice if you don't need the power of SQL and want faster full-text search, but it does take up quite a bit of space and can take a long time to build the first time.
+
+Once the index is built, you will need to instruct /prog/scrape itself to keep it up to date with the `--index` argument.
+
+This requires the `Whoosh` module, which may be downloaded [here](http://bitbucket.org/mchaput/whoosh) or through pip or whatever.
 
 ## Bugs and feature requests
 

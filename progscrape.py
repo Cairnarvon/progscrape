@@ -2,13 +2,16 @@
 
 import gc
 import gzip
+import os
 import sqlite3
 import sys
 import re
 import threading
 import time
 import Queue
+from datetime import datetime
 from getopt import getopt
+from htmlentitydefs import name2codepoint
 from StringIO import StringIO
 
 try:
@@ -21,6 +24,13 @@ except ImportError:
         use_json = False
 
 import requests
+
+try:
+    import whoosh
+    import whoosh.fields
+    import whoosh.index
+except ImportError:
+    whoosh = None
 
 
 # ``Constants''
@@ -99,6 +109,9 @@ if '--help' in sys.argv or '-h' in sys.argv:
     print "\t\tJust figure out how many threads would have to be retrieved,"
     print "\t\tdon't actually retrieve them. (default: %s)" % ("no", "yes")[dry_run]
     print
+    print "\t\033[1m--index\033[0m \033[4mdir\033[0m"
+    print "\t\tAlso index new posts in given directory. Omit not to index."
+    print
     print "\t\033[1m--help\033[0m"
     print "\t\033[1m-h\033[0m"
     print "\t\tdisplay this message and exit"
@@ -113,12 +126,14 @@ try:
                                                'base-url=', 'port=', 'board=',
                                                'partial', 'aborn', 'no-aborn',
                                                'dry-run', 'no-dry-run',
-                                               'charset=', 'threads=', 'help'])
+                                               'charset=', 'threads=', 'index=',
+                                               'help'])
 except:
     print "Invalid argument! Use \033[1m--help\033[0m for help."
     sys.exit(1)
 
 partial = False
+idir = None
 
 for (opt, arg) in optlist:
     if opt == '--json':
@@ -174,6 +189,12 @@ for (opt, arg) in optlist:
         dry_run = True
     elif opt == '--no-dry-run':
         dry_run = False
+    elif opt == '--index':
+        if whoosh is None:
+            print "Can't index posts without Whoosh!"
+            sys.exit(1)
+        else:
+            idir = arg
 
 if len(board) > 0:
     if board[-1] != '/':
@@ -223,6 +244,41 @@ except sqlite3.DatabaseError:
     # Specified DB file exists, but isn't an SQLite DB file.
     print "Use a different filename for your DB."
     raise
+
+
+# Open the index if we're doing that
+
+if idir is not None:
+    if not os.path.exists(idir):
+        os.mkdir(idir)
+
+    if not whoosh.index.exists_in(idir, db_name):
+        schema = whoosh.fields.Schema(thread=whoosh.fields.STORED,
+                                      post=whoosh.fields.STORED,
+                                      author=whoosh.fields.STORED,
+                                      trip=whoosh.fields.STORED,
+                                      email=whoosh.fields.STORED,
+                                      time=whoosh.fields.DATETIME(stored=True),
+                                      body=whoosh.fields.TEXT(stored=True))
+        ix = whoosh.index.create_in(idir, schema, indexname=db_name)
+        print "Created new index in \033[1m%s\033[0m." % idir
+    else:
+        ix = whoosh.index.open_dir(idir, indexname=db_name)
+
+    # Need to scrub HTML cruft from post bodies and usernames
+    def scrub(s, regices=[re.compile('<.*?>'),
+                          re.compile(r'&#(\d+);'),
+                          re.compile('&(%s);' % '|'.join(name2codepoint))]):
+        if s is None:
+            return u''
+        s = s.replace('<br/>', '\n')
+        s = s.replace("<span class='quote'>", '> ')
+        s = regices[0].sub('', s)
+        s = regices[1].sub(lambda m: unichr(int(m.group(1))) \
+                                     if int(m.group(1)) <= 0x10ffff \
+                                     else m.group(0), s)
+        s = regices[2].sub(lambda m: unichr(name2codepoint[m.group(1)]), s)
+        return s
 
 
 # Try to fetch subject.txt
@@ -557,7 +613,7 @@ for _ in xrange(threads):
     threading.Thread(target=scrape_json if use_json else scrape_html).start()
 
 
-# Add scraped content to DB as we're going
+# Add scraped content to DB and possibly index as we're going
 
 def show_progress(idx, tot):
     perc = idx * 100.0 / tot
@@ -579,12 +635,27 @@ while threading.activeCount() > 1 or not done_queue.empty():
 
     db.execute(u'update threads set last_post = ? where thread = ?', thread)
 
+    if idir is not None:
+        ixwriter = ix.writer()
+
     for post in posts:
         db.execute(u'insert or replace into posts \
                      (thread, id, author, email, trip, time, body) \
                      values (?, ?, ?, ?, ?, ?, ?)', post)
+        if idir is not None:
+            try:
+                timestamp = float(post[5])
+            except:
+                timestamp = 0.0
+            ixwriter.add_document(thread=post[0], post=post[1],
+                                  author=scrub(post[2]), email=post[3],
+                                  trip=post[4],
+                                  time=datetime.fromtimestamp(timestamp),
+                                  body=scrub(post[6]))
 
     db_conn.commit()
+    if idir is not None:
+        ixwriter.commit()
 
     idx += 1
     if progress_bar:
