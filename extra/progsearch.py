@@ -14,9 +14,9 @@ import whoosh.fields
 import whoosh.index
 import whoosh.qparser
 
-def build_index(db, idir):
+def build_index(db, idir, indexname):
     start = time.time()
-    print 'Building index %s in %s... ' % (db, idir),
+    print 'Building index %s in %s... ' % (indexname, idir),
     sys.stdout.flush()
 
     schema = whoosh.fields.Schema(thread=whoosh.fields.STORED,
@@ -26,7 +26,7 @@ def build_index(db, idir):
                                   email=whoosh.fields.STORED,
                                   time=whoosh.fields.DATETIME(stored=True),
                                   body=whoosh.fields.TEXT(stored=True))
-    ix = whoosh.index.create_in(idir, schema, indexname=db)
+    ix = whoosh.index.create_in(idir, schema, indexname=indexname)
     writer = ix.writer()
 
     conn = sqlite3.connect(db)
@@ -119,17 +119,19 @@ if __name__ == '__main__':
     if not os.path.exists(args.idir):
         os.mkdir(args.idir)
 
+    indexname = os.path.basename(args.db)
+
     # Build index if it doesn't exist, or update if asked.
-    if not whoosh.index.exists_in(args.idir, indexname=args.db):
-        build_index(args.db, args.idir)
+    if not whoosh.index.exists_in(args.idir, indexname=indexname):
+        build_index(args.db, args.idir, indexname)
     elif not args.query:
-        print >>sys.stderr, 'Index for %s exists in %s.' % (args.db, args.idir)
+        print >>sys.stderr, 'Index for %s exists in %s.' % (indexname, args.idir)
 
     # If we're only building the index, we're done.
     if not args.query:
         sys.exit(0)
 
-    ix = whoosh.index.open_dir(args.idir, indexname=args.db)
+    ix = whoosh.index.open_dir(args.idir, indexname=indexname)
     with ix.searcher() as searcher:
         qparse = whoosh.qparser.QueryParser('body', ix.schema)
         query = qparse.parse(' '.join(args.query).decode('utf8'))

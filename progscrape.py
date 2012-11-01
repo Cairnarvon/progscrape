@@ -252,7 +252,9 @@ if idir is not None:
     if not os.path.exists(idir):
         os.mkdir(idir)
 
-    if not whoosh.index.exists_in(idir, db_name):
+    indexname = os.path.basename(db_name)
+
+    if not whoosh.index.exists_in(idir, indexname):
         schema = whoosh.fields.Schema(thread=whoosh.fields.STORED,
                                       post=whoosh.fields.STORED,
                                       author=whoosh.fields.STORED,
@@ -260,10 +262,10 @@ if idir is not None:
                                       email=whoosh.fields.STORED,
                                       time=whoosh.fields.DATETIME(stored=True),
                                       body=whoosh.fields.TEXT(stored=True))
-        ix = whoosh.index.create_in(idir, schema, indexname=db_name)
+        ix = whoosh.index.create_in(idir, schema, indexname=indexname)
         print "Created new index in \033[1m%s\033[0m." % idir
     else:
-        ix = whoosh.index.open_dir(idir, indexname=db_name)
+        ix = whoosh.index.open_dir(idir, indexname=indexname)
 
     # Need to scrub HTML cruft from post bodies and usernames
     def scrub(s, regices=[re.compile('<.*?>'),
