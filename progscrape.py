@@ -649,7 +649,7 @@ while threading.activeCount() > 1 or not done_queue.empty():
                 timestamp = float(post[5])
             except:
                 timestamp = 0.0
-            ixwriter.add_document(thread=post[0], post=post[1],
+            ixwriter.add_document(int(thread=post[0]), int(post=post[1]),
                                   author=scrub(post[2]), email=post[3],
                                   trip=post[4],
                                   time=datetime.fromtimestamp(timestamp),
