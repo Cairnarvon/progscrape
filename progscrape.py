@@ -418,7 +418,7 @@ def scrape_json():
     maybe_trip = u'^.*?!(?:[a-zA-Z0-9./]{10}|(?:[a-zA-Z0-9./]{10})?![a-zA-Z0-9+/]{15})$'
     maybe_trip = re.compile(maybe_trip, re.DOTALL)
 
-    htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span><span class="postertrip">(?P<trip>.*?)</span> : <span class="posterdate">[^<]*</span> <span class="id">.*?</span></span></h3>'
+    htripregex = u'<h3><span class="postnum"><a href=\'javascript:quote\(%s,"post1"\);\'>%s</a> </span><span class="postinfo"><span class="namelabel"> Name: </span><span class="postername">(?P<author>.*?)</span> ?<span class="postertrip">(?P<trip>.*?)</span>'
 
     while not todo_queue.empty():
         try:
